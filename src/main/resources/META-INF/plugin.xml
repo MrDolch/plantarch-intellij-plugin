@@ -1,15 +1,21 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
     <id>com.github.mrdolch.plantarchintellijplugin</id>
-    <name>plantarch-intellij-plugin</name>
+    <name>PlantArch Live Analyzer</name>
     <vendor>mrdolch</vendor>
 
     <depends>com.intellij.modules.platform</depends>
-
+    <depends>com.intellij.modules.java</depends>
+    <depends>PlantUML integration</depends>
     <resource-bundle>messages.MyBundle</resource-bundle>
 
+    <actions>
+        <action id="PlantArch.ShowDiagram"
+                class="com.github.mrdolch.plantarchintellijplugin.toolWindow.ActionStartNewDiagram"
+                text="Zeige UML-Diagramm"/>
+    </actions>
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.mrdolch.plantarchintellijplugin.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
-        <postStartupActivity implementation="com.github.mrdolch.plantarchintellijplugin.startup.MyProjectActivity" />
+        <toolWindow id="PlantArch" anchor="bottom"
+                    factoryClass="com.github.mrdolch.plantarchintellijplugin.toolWindow.PlantArchToolWindowFactory"/>
     </extensions>
 </idea-plugin>

@@ -1,0 +1,20 @@
+@startmindmap
+skinparam monochrome false
+
++ PlantArch IntelliJ Plugin
+++ <color:green> ☑ Features
++++ ☑ Analyse komp. Klassen
++++ ☑ Diagram in Editor öffnen
++++ ☑ gegebene Parameter im Diagramm
++++ ☑ weitere Klassen hinzufügen, ausblenden
+++ <color:orange> ☐ Focus
+++ <color:red> ☐ Bugs
+++ <color:blue> ☐ ToDos
++++ ☐ Wenn Diagramm im Focus, Parameter aus Diagramm lesen
++++ ☐ Renderer wiederverwenden
++++ ☐ Tests
++++ ☐ Konfigurationspanel
++++ ☐ ToolWindow mit Diagramm
++++ ☐ Publish nach MavenLocal
+
+@endmindmap
