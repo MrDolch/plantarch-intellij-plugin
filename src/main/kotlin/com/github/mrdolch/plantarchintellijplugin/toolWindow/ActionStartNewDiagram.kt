@@ -53,7 +53,9 @@ fun Module.getClasspath(): ImmutableSet<String> {
     // 2. Abhängigkeiten (Libraries, andere Module)
     ModuleRootManager.getInstance(this)
         .orderEntries()
-        .allLibrariesAndSdkClassesRoots
+        .productionOnly()
+        .classes()
+        .roots
         .map { File(it.path).toPath() }
         .map { it.absolutePathString() }
         .map { it.removeSuffix("!") }
