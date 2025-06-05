@@ -34,7 +34,7 @@ object ExecPlantArch {
             classPaths.forEach { params.classPath.add(it) }
             params.workingDirectory =
                 Path.of(PathManager.getPluginsPath(), "plantarch-intellij-plugin", "lib").toString()
-            params.vmParametersList.add("-Xmx2g")
+            params.vmParametersList.add("-Xmx8g")
             params.toCommandLine().withCharset(StandardCharsets.UTF_8)
         }
     }
