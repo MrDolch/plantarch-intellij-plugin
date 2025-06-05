@@ -9,8 +9,8 @@ import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.roots.CompilerModuleExtension
 import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.vfs.toNioPathOrNull
+import com.intellij.psi.PsiClassOwner
 import com.intellij.psi.PsiDocumentManager
-import com.intellij.psi.PsiJavaFile
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.toImmutableSet
 import tech.dolch.plantarch.cmd.IdeaRenderJob
@@ -23,7 +23,8 @@ class ActionStartNewDiagram : AnAction() {
     override fun actionPerformed(e: AnActionEvent) {
         e.project?.let { project ->
             val editor = FileEditorManager.getInstance(project).selectedTextEditor ?: return
-            val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(editor.document) as? PsiJavaFile ?: return
+            val psiFile =
+                PsiDocumentManager.getInstance(project).getPsiFile(editor.document) as? PsiClassOwner ?: return
             val className = psiFile.classes.firstOrNull()?.qualifiedName ?: return
             val module = ModuleUtil.findModuleForPsiElement(psiFile) ?: return
 
@@ -36,10 +37,10 @@ class ActionStartNewDiagram : AnAction() {
                                 title = "title",
                                 description = "description",
                                 classesToAnalyze = listOf(className),
-                                containersToHide = listOf(),
-                                showUseByMethodNames = true,
+                                containersToHide = listOf("jrt"),
+                                showUseByMethodNames = false,
                             )
-                        ), File.createTempFile("diagram", ".puml").absolutePath
+                        ), File.createTempFile("class-diagram", ".puml").absolutePath
                     )
                     ExecPlantArch.executePlantArch(jobParams)
                 }
@@ -49,7 +50,7 @@ class ActionStartNewDiagram : AnAction() {
 }
 
 fun Module.getClasspath(): ImmutableSet<String> {
-    val classpath = mutableSetOf("plantarch-0.1.6-launcher.jar")
+    val classpath = mutableSetOf("plantarch-0.1.7-launcher.jar")
     // 2. Abhängigkeiten (Libraries, andere Module)
     ModuleRootManager.getInstance(this)
         .orderEntries()

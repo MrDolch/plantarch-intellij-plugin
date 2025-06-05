@@ -1,5 +1,6 @@
 package com.github.mrdolch.plantarchintellijplugin.toolWindow
 
+import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.wm.ToolWindow
@@ -13,6 +14,11 @@ class PlantArchToolWindowFactory : ToolWindowFactory {
         val content = ContentFactory.getInstance().createContent(panel, "", false)
         toolWindow.contentManager.addContent(content)
         project.putUserData(PANEL_KEY, panel)
+        val connection = project.messageBus.connect()
+        connection.subscribe(
+            FileEditorManagerListener.FILE_EDITOR_MANAGER,
+            DiagramFileListener(panel)
+        )
     }
 }
 
