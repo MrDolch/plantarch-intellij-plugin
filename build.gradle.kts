@@ -35,7 +35,7 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.opentest4j)
 
-    implementation("io.github.mrdolch:plantarch:0.1.7") { artifact { classifier = "launcher" } }
+    implementation("io.github.mrdolch:plantarch:0.1.8-SNAPSHOT") { artifact { classifier = "launcher" } }
 
     // IntelliJ Platform Gradle Plugin Dependencies Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html
     intellijPlatform {

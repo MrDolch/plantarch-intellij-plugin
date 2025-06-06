@@ -50,7 +50,7 @@ class ActionStartNewDiagram : AnAction() {
 }
 
 fun Module.getClasspath(): ImmutableSet<String> {
-    val classpath = mutableSetOf("plantarch-0.1.7-launcher.jar")
+    val classpath = mutableSetOf("plantarch-0.1.8-SNAPSHOT-launcher.jar")
     // 2. Abhängigkeiten (Libraries, andere Module)
     ModuleRootManager.getInstance(this)
         .orderEntries()
