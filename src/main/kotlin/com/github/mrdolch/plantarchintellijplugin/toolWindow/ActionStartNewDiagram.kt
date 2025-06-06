@@ -14,6 +14,7 @@ import com.intellij.psi.PsiDocumentManager
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.toImmutableSet
 import tech.dolch.plantarch.cmd.IdeaRenderJob
+import tech.dolch.plantarch.cmd.OptionPanelState
 import tech.dolch.plantarch.cmd.RenderJob
 import java.io.File
 import kotlin.io.path.absolutePathString
@@ -31,16 +32,28 @@ class ActionStartNewDiagram : AnAction() {
             CompilerManager.getInstance(project).make { aborted, errors, warnings, compileContext ->
                 if (!aborted && errors == 0) {
                     val jobParams = IdeaRenderJob(
-                        project.name, module.name, module.getClasspath(),
-                        RenderJob(
+                        projectName = project.name,
+                        moduleName = module.name,
+                        classPaths = module.getClasspath(),
+                        optionPanelState = OptionPanelState(
+                            targetPumlFile = File.createTempFile("class-diagram-", ".puml").absolutePath,
+                            showPackages = true,
+                            flatPackages = false,
+                            classesInFocus = listOf(className),
+                            classesInFocusSelected = listOf(className),
+                            hiddenContainers = listOf("jrt"),
+                            hiddenContainersSelected = listOf(),
+                            hiddenClasses = listOf(),
+                            hiddenClassesSelected = listOf(),
+                        ),
+                        renderJob = RenderJob(
                             classDiagrams = RenderJob.ClassDiagramParams(
-                                title = "title",
-                                description = "description",
+                                title = "Dependencies of $className",
+                                description = "",
                                 classesToAnalyze = listOf(className),
                                 containersToHide = listOf("jrt"),
-                                showUseByMethodNames = false,
-                            )
-                        ), File.createTempFile("class-diagram", ".puml").absolutePath
+                            ),
+                        ),
                     )
                     ExecPlantArch.executePlantArch(jobParams)
                 }
@@ -50,7 +63,7 @@ class ActionStartNewDiagram : AnAction() {
 }
 
 fun Module.getClasspath(): ImmutableSet<String> {
-    val classpath = mutableSetOf("plantarch-0.1.7-launcher.jar")
+    val classpath = mutableSetOf("plantarch-0.1.8-launcher.jar")
     // 2. Abhängigkeiten (Libraries, andere Module)
     ModuleRootManager.getInstance(this)
         .orderEntries()

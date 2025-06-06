@@ -30,7 +30,7 @@ class DiagramFileListener(
         val content = String(file.contentsToByteArray())
         content.lines().getOrNull(1)?.drop(1)?.let { json ->
             val jobParams = Json.decodeFromString<IdeaRenderJob>(json)
-            optionsPanel.updatePanel(jobParams, content)
+            optionsPanel.updatePanel(jobParams)
             registerSelectionListener(getProjectByName(jobParams.projectName), optionsPanel)
         }
     }
