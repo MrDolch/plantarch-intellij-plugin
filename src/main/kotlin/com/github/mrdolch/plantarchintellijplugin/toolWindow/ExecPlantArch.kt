@@ -22,6 +22,8 @@ import tech.dolch.plantarch.cmd.IdeaRenderJob
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
 
+fun getProjectByName(projectName: String) =
+    ProjectManager.getInstance().openProjects.first { it.name == projectName }
 
 object ExecPlantArch {
 
@@ -58,8 +60,6 @@ object ExecPlantArch {
         }
     }
 
-    private fun getProjectByName(projectName: String) =
-        ProjectManager.getInstance().openProjects.first { it.name == projectName }
 
     internal class RendererDoneListener(
         private val processHandler: ProcessHandler,
@@ -85,7 +85,7 @@ object ExecPlantArch {
                 .subList(1, rawPlantuml.lines().size - 3)
                 .joinToString("\n")
                 // insert parameters as comment
-                .replaceFirst("@startuml\n", "@startuml\n' $jobParams\n")
+                .replaceFirst("@startuml\n", "@startuml\n' ${Json.encodeToString(jobParams)}\n!pragma layout smetana\n")
 
             val project = getProjectByName(jobParams.projectName)
             // update Plugins-Panel
