@@ -6,6 +6,7 @@ import com.intellij.openapi.compiler.CompilerManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleUtil
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.CompilerModuleExtension
 import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.vfs.toNioPathOrNull
@@ -31,35 +32,46 @@ class ActionStartNewDiagram : AnAction() {
 
             CompilerManager.getInstance(project).make { aborted, errors, warnings, compileContext ->
                 if (!aborted && errors == 0) {
-                    val jobParams = IdeaRenderJob(
-                        projectName = project.name,
-                        moduleName = module.name,
-                        classPaths = module.getClasspath(),
-                        optionPanelState = OptionPanelState(
-                            targetPumlFile = File.createTempFile("class-diagram-", ".puml").absolutePath,
-                            showPackages = true,
-                            flatPackages = false,
-                            classesInFocus = listOf(className),
-                            classesInFocusSelected = listOf(className),
-                            hiddenContainers = listOf("jrt"),
-                            hiddenContainersSelected = listOf(),
-                            hiddenClasses = listOf(),
-                            hiddenClassesSelected = listOf(),
-                        ),
-                        renderJob = RenderJob(
-                            classDiagrams = RenderJob.ClassDiagramParams(
-                                title = "Dependencies of $className",
-                                description = "",
-                                classesToAnalyze = listOf(className),
-                                containersToHide = listOf("jrt"),
-                            ),
-                        ),
-                    )
+                    val jobParams = createIdeaRenderJob(project, module, className)
                     ExecPlantArch.executePlantArch(jobParams)
                 }
             }
         }
     }
+
+
+}
+
+fun createIdeaRenderJob(
+    project: Project,
+    module: Module,
+    className:  String
+): IdeaRenderJob {
+    val jobParams = IdeaRenderJob(
+        projectName = project.name,
+        moduleName = module.name,
+        classPaths = module.getClasspath(),
+        optionPanelState = OptionPanelState(
+            targetPumlFile = File.createTempFile("class-diagram-", ".puml").absolutePath,
+            showPackages = true,
+            flatPackages = false,
+            classesInFocus = listOf(className),
+            classesInFocusSelected = listOf(className),
+            hiddenContainers = listOf("jrt"),
+            hiddenContainersSelected = listOf(),
+            hiddenClasses = listOf(),
+            hiddenClassesSelected = listOf(),
+        ),
+        renderJob = RenderJob(
+            classDiagrams = RenderJob.ClassDiagramParams(
+                title = "Dependencies of ${className.replaceBeforeLast(".","").substring(1)}",
+                description = "",
+                classesToAnalyze = listOf(className),
+                containersToHide = listOf("jrt"),
+            ),
+        ),
+    )
+    return jobParams
 }
 
 fun Module.getClasspath(): ImmutableSet<String> {

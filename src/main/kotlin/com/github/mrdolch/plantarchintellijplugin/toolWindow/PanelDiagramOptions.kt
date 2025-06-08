@@ -2,6 +2,7 @@ package com.github.mrdolch.plantarchintellijplugin.toolWindow
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.ui.components.JBList
+import com.intellij.util.ui.FormBuilder
 import tech.dolch.plantarch.cmd.IdeaRenderJob
 import java.awt.*
 import javax.swing.*
@@ -12,7 +13,7 @@ class PanelDiagramOptions : JPanel(BorderLayout()) {
     private val classesInFocusBox = JBList<String>()
     private val containersBox = JBList<String>()
     private val hiddenClassesBox = JBList<String>()
-    private val umlOptionsPanel = UmlOptionsPanel()
+    private val umlOptionsPanel = UmlOptionsPanel(this)
     private var jobParams: IdeaRenderJob? = null
 
 
@@ -65,7 +66,7 @@ class PanelDiagramOptions : JPanel(BorderLayout()) {
 
     }
 
-    private fun updateDiagram() {
+     fun updateDiagram() {
         jobParams!!.renderJob.classDiagrams.let {
             it.classesToAnalyze = classesInFocusBox.selectedValuesList
             it.containersToHide = (0 until containersBox.model.size)
@@ -144,7 +145,7 @@ class PanelDiagramOptions : JPanel(BorderLayout()) {
 }
 
 
-class UmlOptionsPanel : JPanel(BorderLayout()) {
+class UmlOptionsPanel(private val panelDiagramOptions: PanelDiagramOptions) : JPanel(BorderLayout()) {
 
     val titleField = JTextField()
     val descriptionArea = JTextArea(5, 20)
@@ -153,38 +154,22 @@ class UmlOptionsPanel : JPanel(BorderLayout()) {
     val flatPackagesCheckbox = JCheckBox("flat packages")
 
     init {
-        val formPanel = JPanel(GridBagLayout())
-        val gbc = GridBagConstraints().apply {
-            fill = GridBagConstraints.HORIZONTAL
-            insets = Insets(4, 4, 4, 4)
-        }
-
-        // Titel-Eingabe
-        gbc.gridx = 0
-        gbc.gridy = 0
-        formPanel.add(JLabel("Titel:"), gbc)
-        gbc.gridx = 1
-        gbc.weightx = 1.0
-        formPanel.add(titleField, gbc)
-
-        // Beschreibung (mehrzeilig)
-        gbc.gridx = 0
-        gbc.gridy = 1
-        gbc.weightx = 0.0
-        formPanel.add(JLabel("Beschreibung:"), gbc)
-        gbc.gridx = 1
-        val scroll = JScrollPane(descriptionArea)
-        formPanel.add(scroll, gbc)
-
-        // Checkboxen
-        val checkboxPanel = JPanel(GridLayout(0, 1))
-        checkboxPanel.border = BorderFactory.createTitledBorder("Optionen")
-        checkboxPanel.add(showMethodNamesCheckbox)
-        checkboxPanel.add(showPackagesCheckbox)
-        checkboxPanel.add(flatPackagesCheckbox)
-
-        // Layout kombinieren
-        this.add(formPanel, BorderLayout.NORTH)
-        this.add(checkboxPanel, BorderLayout.CENTER)
+        this.add(JScrollPane(
+            FormBuilder.createFormBuilder()
+                .addLabeledComponent("Title:", titleField)
+                .addComponent(JPanel(GridLayout(0, 1)).apply {
+                    border = BorderFactory.createTitledBorder("Description")
+                    add(JScrollPane(descriptionArea))
+                })
+                .addLabeledComponent("",JButton("Render diagram").apply {
+                    addActionListener { panelDiagramOptions.updateDiagram() }
+                })
+                .addComponent(JPanel(GridLayout(0, 1)).apply {
+                    border = BorderFactory.createTitledBorder("Options")
+                    add(showMethodNamesCheckbox)
+                    add(showPackagesCheckbox)
+                    add(flatPackagesCheckbox)
+                }).panel), BorderLayout.NORTH
+        )
     }
 }
