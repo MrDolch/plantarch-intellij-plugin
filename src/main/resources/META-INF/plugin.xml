@@ -4,18 +4,6 @@
     <name>PlantArch Live Analyzer</name>
     <vendor>mrdolch</vendor>
 
-    <description><![CDATA[
-Adds support for the <strong>PlantArch</strong> framework in IntelliJ IDEA.
-This plugin allows you to generate a clear and interactive architectural overview of your Java project within seconds.
-
-Key features:
-<ul>
-  <li>Instant architecture visualization based on the currently opened project</li>
-  <li>Seamless integration with external analysis tools and PlantUML rendering</li>
-  <li>Live diagram updates directly within the IDE</li>
-</ul>
-]]></description>
-
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.java</depends>
     <resource-bundle>messages.MyBundle</resource-bundle>
