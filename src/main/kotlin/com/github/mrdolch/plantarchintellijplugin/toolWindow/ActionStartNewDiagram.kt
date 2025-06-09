@@ -52,7 +52,7 @@ fun createIdeaRenderJob(
         moduleName = module.name,
         classPaths = module.getClasspath(),
         optionPanelState = OptionPanelState(
-            targetPumlFile = File.createTempFile("class-diagram-", ".puml").absolutePath,
+            targetPumlFile = File.createTempFile(FILE_PREFIX_DEPENDENCY_DIAGRAM, ".puml").absolutePath,
             showPackages = true,
             flatPackages = false,
             classesInFocus = listOf(className),

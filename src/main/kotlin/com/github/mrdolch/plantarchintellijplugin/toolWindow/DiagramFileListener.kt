@@ -13,6 +13,8 @@ import com.intellij.openapi.vfs.findPsiFile
 import kotlinx.serialization.json.Json
 import tech.dolch.plantarch.cmd.IdeaRenderJob
 
+const val FILE_PREFIX_DEPENDENCY_DIAGRAM = "dependency-diagram-"
+
 class DiagramFileListener(
     private val optionsPanel: PanelDiagramOptions
 ) : FileEditorManagerListener {
@@ -31,7 +33,7 @@ class DiagramFileListener(
         file.fileType == JavaFileType.INSTANCE
 
     private fun isDiagramFile(file: VirtualFile): Boolean =
-        file.name.startsWith("class-diagram") && file.extension == "puml"
+        file.name.startsWith(FILE_PREFIX_DEPENDENCY_DIAGRAM) && file.extension == "puml"
 
     private fun readOptionsFromDiagramFile(file: VirtualFile) {
         // Beispiel: Lese Inhalt oder Metadaten und setze Felder im Panel

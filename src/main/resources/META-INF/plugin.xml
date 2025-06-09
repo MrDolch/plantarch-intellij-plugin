@@ -10,13 +10,10 @@ This plugin allows you to generate a clear and interactive architectural overvie
 
 Key features:
 <ul>
-  <li>Instant architecture visualization based on compiled class files</li>
-  <li>Integration with external analysis processes and PlantUML rendering</li>
-  <li>Dynamic diagram updates directly within the IDE</li>
+  <li>Instant architecture visualization based on the currently opened project</li>
+  <li>Seamless integration with external analysis tools and PlantUML rendering</li>
+  <li>Live diagram updates directly within the IDE</li>
 </ul>
-
-For documentation and more information, visit the
-<a href="https://example.com" target="_blank">official project site</a>.
 ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
@@ -26,7 +23,7 @@ For documentation and more information, visit the
     <actions>
         <action id="PlantArch.ShowDiagram"
                 class="com.github.mrdolch.plantarchintellijplugin.toolWindow.ActionStartNewDiagram"
-                text="Zeige UML-Diagramm"/>
+                text="Render Dependency Diagram"/>
     </actions>
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow id="PlantArch" anchor="bottom"
