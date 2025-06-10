@@ -2,18 +2,18 @@ package com.github.mrdolch.plantarchintellijplugin.toolWindow
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.ui.components.JBList
+import com.intellij.util.ui.FormBuilder
 import tech.dolch.plantarch.cmd.IdeaRenderJob
-import tech.dolch.plantarch.cmd.RenderJob
 import java.awt.*
 import javax.swing.*
 import javax.swing.border.TitledBorder
 
 class PanelDiagramOptions : JPanel(BorderLayout()) {
 
-    private val list1 = JBList<String>()
-    private val list2 = JBList<String>()
-    private val list3 = JBList<String>()
-    private val umlOptionsPanel = UmlOptionsPanel()
+    private val classesInFocusBox = JBList<String>()
+    private val containersBox = JBList<String>()
+    private val hiddenClassesBox = JBList<String>()
+    private val umlOptionsPanel = UmlOptionsPanel(this)
     private var jobParams: IdeaRenderJob? = null
 
 
@@ -21,11 +21,11 @@ class PanelDiagramOptions : JPanel(BorderLayout()) {
         layout = GridLayout(1, 4)
 
         add(JScrollPane(umlOptionsPanel).apply { border = TitledBorder("Optionen") })
-        umlOptionsPanel.showMethodNames.addItemListener { updateDiagram() }
+        umlOptionsPanel.showMethodNamesCheckbox.addItemListener { updateDiagram() }
 
-        addList(list1, "Classes in Focus")
-        addList(list2, "Visible Containers")
-        addList(list3, "Hidden Classes")
+        addList(classesInFocusBox, "Classes in Focus")
+        addList(containersBox, "Visible Containers")
+        addList(hiddenClassesBox, "Hidden Classes")
     }
 
     private fun addList(jbList: JBList<String>, title: String) {
@@ -66,12 +66,20 @@ class PanelDiagramOptions : JPanel(BorderLayout()) {
 
     }
 
-    private fun updateDiagram() {
+     fun updateDiagram() {
         jobParams!!.renderJob.classDiagrams.let {
-            it.classesToAnalyze = getSelectedFromList1()
-            it.containersToHide = getUnselectedFromList2()
-            it.classesToHide = getSelectedFromList3()
-            it.showUseByMethodNames = isShowMethodNames()
+            it.classesToAnalyze = classesInFocusBox.selectedValuesList
+            it.containersToHide = (0 until containersBox.model.size)
+                .map { i -> containersBox.model.getElementAt(i) }
+                .minus(containersBox.selectedValuesList.toSet())
+            it.classesToHide = hiddenClassesBox.selectedValuesList
+            it.showUseByMethodNames = umlOptionsPanel.showMethodNamesCheckbox.isSelected
+            it.title = umlOptionsPanel.titleField.text
+            it.description = umlOptionsPanel.descriptionArea.text
+        }
+        jobParams!!.optionPanelState.let {
+            it.showPackages = umlOptionsPanel.showPackagesCheckbox.isSelected
+            it.flatPackages = umlOptionsPanel.flatPackagesCheckbox.isSelected
         }
         ApplicationManager.getApplication().invokeLater {
             ExecPlantArch.executePlantArch(jobParams!!)
@@ -87,59 +95,49 @@ class PanelDiagramOptions : JPanel(BorderLayout()) {
         jbList.setSelectedIndices(selectedIndices)
     }
 
-    fun isShowMethodNames(): Boolean = umlOptionsPanel.showMethodNames.isSelected
-    fun getSelectedFromList1(): List<String> = list1.selectedValuesList
-    fun getUnselectedFromList2(): List<String> {
-        val all = (0 until list2.model.size).map { list2.model.getElementAt(it) }
-        return all - list2.selectedValuesList
-    }
-
-    fun getSelectedFromList3(): List<String> = list3.selectedValuesList
-
-    fun updatePanel(jobParams: IdeaRenderJob, plantuml: String) {
+    fun updatePanel(jobParams: IdeaRenderJob) {
         this.jobParams = jobParams
-        updateList1und3(plantuml, jobParams.renderJob)
-        updateList2(plantuml, jobParams.renderJob)
-        umlOptionsPanel.showMethodNames.let {
+        setItems(
+            classesInFocusBox,
+            jobParams.optionPanelState.classesInFocus,
+            jobParams.optionPanelState.classesInFocusSelected
+        )
+        setItems(
+            hiddenClassesBox,
+            jobParams.optionPanelState.hiddenClasses,
+            jobParams.optionPanelState.hiddenClassesSelected
+        )
+        setItems(
+            containersBox,
+            jobParams.optionPanelState.hiddenContainers,
+            jobParams.optionPanelState.hiddenContainers - jobParams.optionPanelState.hiddenContainersSelected.toSet()
+        )
+        umlOptionsPanel.titleField.text = jobParams.renderJob.classDiagrams.title
+        umlOptionsPanel.descriptionArea.text = jobParams.renderJob.classDiagrams.description
+        umlOptionsPanel.showMethodNamesCheckbox.let {
             it.itemListeners.forEach { listener -> it.removeItemListener(listener) }
             it.isSelected = jobParams.renderJob.classDiagrams.showUseByMethodNames
             it.addItemListener { updateDiagram() }
         }
-    }
-
-    private fun updateList1und3(plantuml: String, renderJob: RenderJob) {
-        val selectedItems = renderJob.classDiagrams.classesToAnalyze
-        val hiddenItems = renderJob.classDiagrams.classesToHide
-        val allItems = plantuml.lineSequence()
-            .filter {
-                it.startsWith("enum ") || it.startsWith("class ")
-                        || it.startsWith("abstract ") || it.startsWith("interface ")
-            }.map { it.split(' ')[1] }
-            .plus(selectedItems)
-            .plus(hiddenItems)
-            .distinct().sorted().toList()
-
-        setItems(list1, allItems, selectedItems)
-        setItems(list3, allItems, hiddenItems)
-    }
-
-    private fun updateList2(plantuml: String, renderJob: RenderJob) {
-        val items = plantuml.lines()
-            .filter { it.startsWith("object ") }
-            .map { it.split('"')[1] }
-            .plus(renderJob.classDiagrams.containersToHide)
-            .distinct()
-        val selectedItems = items - renderJob.classDiagrams.containersToHide.toSet()
-        setItems(list2, items, selectedItems)
+        umlOptionsPanel.showPackagesCheckbox.let {
+            it.itemListeners.forEach { listener -> it.removeItemListener(listener) }
+            it.isSelected = jobParams.optionPanelState.showPackages
+            it.addItemListener { updateDiagram() }
+        }
+        umlOptionsPanel.flatPackagesCheckbox.let {
+            it.itemListeners.forEach { listener -> it.removeItemListener(listener) }
+            it.isSelected = jobParams.optionPanelState.flatPackages
+            it.addItemListener { updateDiagram() }
+        }
     }
 
     fun toggleListEntry(text: String) {
-        for (i in 0 until list1.model.size)
-            if (list1.model.getElementAt(i).endsWith(".$text")) {
-                val selection = list1.selectedIndices.toMutableSet()
+        for (i in 0 until classesInFocusBox.model.size)
+            if (classesInFocusBox.model.getElementAt(i).endsWith(".$text")) {
+                val selection = classesInFocusBox.selectedIndices.toMutableSet()
                 if (selection.contains(i)) selection.remove(i)
                 else selection.add(i)
-                list1.selectedIndices = selection.sorted().toIntArray()
+                classesInFocusBox.selectedIndices = selection.sorted().toIntArray()
                 updateDiagram()
                 return
             }
@@ -147,47 +145,31 @@ class PanelDiagramOptions : JPanel(BorderLayout()) {
 }
 
 
-class UmlOptionsPanel : JPanel(BorderLayout()) {
+class UmlOptionsPanel(private val panelDiagramOptions: PanelDiagramOptions) : JPanel(BorderLayout()) {
 
     val titleField = JTextField()
     val descriptionArea = JTextArea(5, 20)
-    val showMethodNames = JCheckBox("show method names")
-    val checkbox2 = JCheckBox("Assoziationen anzeigen")
-    val checkbox3 = JCheckBox("Nur öffentliche Member")
+    val showMethodNamesCheckbox = JCheckBox("show method names")
+    val showPackagesCheckbox = JCheckBox("show packages")
+    val flatPackagesCheckbox = JCheckBox("flat packages")
 
     init {
-        val formPanel = JPanel(GridBagLayout())
-        val gbc = GridBagConstraints().apply {
-            fill = GridBagConstraints.HORIZONTAL
-            insets = Insets(4, 4, 4, 4)
-        }
-
-        // Titel-Eingabe
-        gbc.gridx = 0
-        gbc.gridy = 0
-        formPanel.add(JLabel("Titel:"), gbc)
-        gbc.gridx = 1
-        gbc.weightx = 1.0
-        formPanel.add(titleField, gbc)
-
-        // Beschreibung (mehrzeilig)
-        gbc.gridx = 0
-        gbc.gridy = 1
-        gbc.weightx = 0.0
-        formPanel.add(JLabel("Beschreibung:"), gbc)
-        gbc.gridx = 1
-        val scroll = JScrollPane(descriptionArea)
-        formPanel.add(scroll, gbc)
-
-        // Checkboxen
-        val checkboxPanel = JPanel(GridLayout(0, 1))
-        checkboxPanel.border = BorderFactory.createTitledBorder("Optionen")
-        checkboxPanel.add(showMethodNames)
-        checkboxPanel.add(checkbox2)
-        checkboxPanel.add(checkbox3)
-
-        // Layout kombinieren
-        this.add(formPanel, BorderLayout.NORTH)
-        this.add(checkboxPanel, BorderLayout.CENTER)
+        this.add(JScrollPane(
+            FormBuilder.createFormBuilder()
+                .addLabeledComponent("Title:", titleField)
+                .addComponent(JPanel(GridLayout(0, 1)).apply {
+                    border = BorderFactory.createTitledBorder("Description")
+                    add(JScrollPane(descriptionArea))
+                })
+                .addLabeledComponent("",JButton("Render diagram").apply {
+                    addActionListener { panelDiagramOptions.updateDiagram() }
+                })
+                .addComponent(JPanel(GridLayout(0, 1)).apply {
+                    border = BorderFactory.createTitledBorder("Options")
+                    add(showMethodNamesCheckbox)
+                    add(showPackagesCheckbox)
+                    add(flatPackagesCheckbox)
+                }).panel), BorderLayout.NORTH
+        )
     }
 }
