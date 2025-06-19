@@ -186,6 +186,7 @@ class PanelDiagramOptions : JPanel(BorderLayout()) {
         else selection.add(i)
         containersBox.selectedIndices = selection.sorted().toIntArray()
         hasChanged = true
+
       }
 
     if (hasChanged) updateDiagram()

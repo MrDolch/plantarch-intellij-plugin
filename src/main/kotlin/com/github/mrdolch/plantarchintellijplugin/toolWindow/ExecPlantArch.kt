@@ -123,7 +123,6 @@ object ExecPlantArch {
     return future.get() // blockiert bis fertig
   }
 
-
   internal class RendererDoneListener(
     private val processHandler: ProcessHandler,
     private val jobParams: IdeaRenderJob,

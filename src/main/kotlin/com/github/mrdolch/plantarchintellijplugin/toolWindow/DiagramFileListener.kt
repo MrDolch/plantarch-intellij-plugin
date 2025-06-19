@@ -1,6 +1,7 @@
 package com.github.mrdolch.plantarchintellijplugin.toolWindow
 
 import com.intellij.ide.highlighter.JavaFileType
+
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.event.SelectionEvent
 import com.intellij.openapi.editor.event.SelectionListener
