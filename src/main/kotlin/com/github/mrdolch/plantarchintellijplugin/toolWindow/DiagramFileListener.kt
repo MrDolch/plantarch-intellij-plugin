@@ -1,6 +1,7 @@
 package com.github.mrdolch.plantarchintellijplugin.toolWindow
 
 import com.intellij.ide.highlighter.JavaFileType
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.event.SelectionEvent
 import com.intellij.openapi.editor.event.SelectionListener
 import com.intellij.openapi.fileEditor.FileEditorManager
@@ -21,7 +22,6 @@ class DiagramFileListener(
 
   override fun selectionChanged(event: FileEditorManagerEvent) {
     val newFile: VirtualFile? = event.newFile
-
     when {
       newFile == null -> {}
       isDiagramFile(newFile) -> readOptionsFromDiagramFile(newFile)
@@ -46,12 +46,16 @@ class DiagramFileListener(
   }
 
   private fun createOptionsFromFile(file: VirtualFile, project: Project) {
-    val psiClassOwner = file.findPsiFile(project) as? com.intellij.psi.PsiClassOwner
-    val className = psiClassOwner?.classes?.firstOrNull()?.qualifiedName
-    if (className != null) {
-      val module = ModuleUtil.findModuleForPsiElement(psiClassOwner)
-      val ideaRenderJob = createIdeaRenderJob(project, module!!, className)
-      optionsPanel.updatePanel(ideaRenderJob)
+    ApplicationManager.getApplication().executeOnPooledThread {
+      ApplicationManager.getApplication().runReadAction {
+        val psiClassOwner = file.findPsiFile(project) as? com.intellij.psi.PsiClassOwner
+        val className = psiClassOwner?.classes?.firstOrNull()?.qualifiedName
+        if (className != null) {
+          val module = ModuleUtil.findModuleForPsiElement(psiClassOwner)
+          val ideaRenderJob = createIdeaRenderJob(project, module!!, className)
+          optionsPanel.updatePanel(ideaRenderJob)
+        }
+      }
     }
   }
 

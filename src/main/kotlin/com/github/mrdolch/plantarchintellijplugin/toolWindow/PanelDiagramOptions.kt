@@ -1,6 +1,6 @@
 package com.github.mrdolch.plantarchintellijplugin.toolWindow
 
-import com.intellij.openapi.application.ApplicationManager
+import com.github.mrdolch.plantarchintellijplugin.toolWindow.ExecPlantArch.runAnalyzerBackgroundTask
 import com.intellij.ui.components.JBList
 import com.intellij.ui.table.TableView
 import com.intellij.util.ui.ColumnInfo
@@ -105,6 +105,7 @@ class PanelDiagramOptions : JPanel(BorderLayout()) {
   }
 
   fun updateDiagram() {
+    if (jobParams == null) return
     jobParams!!.renderJob.classDiagrams.let {
       it.classesToAnalyze = classesTable.items.filter { c -> c.isAnalyzed }.map { c -> c.name }
       it.containersToHide = (0 until containersBox.model.size)
@@ -119,10 +120,10 @@ class PanelDiagramOptions : JPanel(BorderLayout()) {
       it.showPackages = umlOptionsPanel.showPackagesCheckbox.isSelected
       it.flatPackages = umlOptionsPanel.flatPackagesCheckbox.isSelected
     }
-    ApplicationManager.getApplication().invokeLater {
-      ExecPlantArch.executePlantArch(jobParams!!)
-    }
+
+    runAnalyzerBackgroundTask(jobParams!!, false)
   }
+
 
   private fun setItems(jbList: JBList<String>, items: List<String>, selectedItems: List<String>) {
     val selectedIndices = items.withIndex()
