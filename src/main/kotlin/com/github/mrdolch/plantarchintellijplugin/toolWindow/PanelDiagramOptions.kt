@@ -51,7 +51,7 @@ class PanelDiagramOptions : JPanel(BorderLayout()) {
         }
       }
     )
-    classesTable.items = mutableListOf();
+    classesTable.items = mutableListOf()
 
     val table = TableView(classesTable).apply {
       setAutoCreateRowSorter(true)
@@ -63,11 +63,11 @@ class PanelDiagramOptions : JPanel(BorderLayout()) {
       columnModel.getColumn(2).preferredWidth = 40
     }
     add(JScrollPane(table).apply { border = TitledBorder("gefundene Klassen") })
-    addList(containersBox, "Visible Containers")
+    addList(containersBox)
   }
 
-  private fun addList(jbList: JBList<String>, title: String) {
-    add(JScrollPane(jbList).apply { border = TitledBorder(title) })
+  private fun addList(jbList: JBList<String>) {
+    add(JScrollPane(jbList).apply { border = TitledBorder("Visible Containers") })
     jbList.cellRenderer = object : DefaultListCellRenderer() {
       override fun getListCellRendererComponent(
         list: JList<*>,

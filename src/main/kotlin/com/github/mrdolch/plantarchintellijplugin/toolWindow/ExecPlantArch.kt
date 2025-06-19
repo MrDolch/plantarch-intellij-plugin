@@ -65,7 +65,7 @@ object ExecPlantArch {
             }
 
             indicator.text = "Analyzing classes..."
-            val renderSuccess = ExecPlantArch.executePlantArch(job)
+            val renderSuccess = executePlantArch(job)
             if (!renderSuccess) return
 
             indicator.text = "Updating UI..."

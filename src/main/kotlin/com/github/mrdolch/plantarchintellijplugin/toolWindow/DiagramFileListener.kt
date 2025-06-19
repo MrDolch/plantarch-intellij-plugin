@@ -60,7 +60,7 @@ class DiagramFileListener(
     }
   }
 
-  fun registerSelectionListener(project: Project, optionsPanel: PanelDiagramOptions) {
+  private fun registerSelectionListener(project: Project, optionsPanel: PanelDiagramOptions) {
     val editor = FileEditorManager.getInstance(project).selectedTextEditor ?: return
     val selectionModel = editor.selectionModel
 
