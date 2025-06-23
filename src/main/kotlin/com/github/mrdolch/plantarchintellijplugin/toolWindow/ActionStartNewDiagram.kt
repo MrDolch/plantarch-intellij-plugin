@@ -62,6 +62,7 @@ fun createIdeaRenderJob(
         description = "",
         classesToAnalyze = listOf(className),
         containersToHide = listOf("jrt"),
+        workingDir = project.basePath!!
       ),
     ),
   )
@@ -69,7 +70,7 @@ fun createIdeaRenderJob(
 }
 
 fun Module.getClasspath(): ImmutableSet<String> {
-  val classpath = mutableSetOf("plantarch-0.1.8-launcher.jar")
+  val classpath = mutableSetOf("plantarch-0.1.10-launcher.jar")
   // 2. Abhängigkeiten (Libraries, andere Module)
   ModuleRootManager.getInstance(this)
     .orderEntries()

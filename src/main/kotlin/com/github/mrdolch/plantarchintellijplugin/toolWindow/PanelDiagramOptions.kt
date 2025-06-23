@@ -1,6 +1,11 @@
 package com.github.mrdolch.plantarchintellijplugin.toolWindow
 
 import com.github.mrdolch.plantarchintellijplugin.toolWindow.ExecPlantArch.runAnalyzerBackgroundTask
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.module.ModuleUtil
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.vfs.findPsiFile
 import com.intellij.ui.components.JBList
 import com.intellij.ui.table.TableView
 import com.intellij.util.ui.ColumnInfo
@@ -102,6 +107,20 @@ class PanelDiagramOptions : JPanel(BorderLayout()) {
       }
     })
 
+  }
+
+  fun createOptionsFromFile(file: VirtualFile, project: Project) {
+    ApplicationManager.getApplication().executeOnPooledThread {
+      ApplicationManager.getApplication().runReadAction {
+        val psiClassOwner = file.findPsiFile(project) as? com.intellij.psi.PsiClassOwner
+        val className = psiClassOwner?.classes?.firstOrNull()?.qualifiedName
+        if (className != null) {
+          val module = ModuleUtil.findModuleForPsiElement(psiClassOwner)
+          val ideaRenderJob = createIdeaRenderJob(project, module!!, className)
+          updatePanel(ideaRenderJob)
+        }
+      }
+    }
   }
 
   fun updateDiagram() {

@@ -1,7 +1,6 @@
 package com.github.mrdolch.plantarchintellijplugin.toolWindow
 
 import com.intellij.execution.configurations.GeneralCommandLine
-import com.intellij.execution.configurations.SimpleJavaParameters
 import com.intellij.execution.process.CapturingProcessAdapter
 import com.intellij.execution.process.OSProcessHandler
 import com.intellij.execution.process.ProcessEvent
@@ -16,15 +15,16 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
-import com.intellij.openapi.projectRoots.ProjectJdkTable
 import com.intellij.openapi.projectRoots.Sdk
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFileManager
 import kotlinx.serialization.json.Json
 import tech.dolch.plantarch.cmd.IdeaRenderJob
+import java.io.File
 import java.lang.System.err
 import java.nio.charset.StandardCharsets
+import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
@@ -102,14 +102,17 @@ object ExecPlantArch {
     val project = getProjectByName(job.projectName)
     val module = ModuleManager.getInstance(project).findModuleByName(job.moduleName)!!
     val relevantJdk = getRelevantJdk(module.project)!!
-    val workingDir = Path.of(PathManager.getPluginsPath(), "plantarch-intellij-plugin", "lib").toString()
-    return SimpleJavaParameters().apply {
-      jdk = ProjectJdkTable.getInstance().findJdk(relevantJdk.name)
-      mainClass = "tech.dolch.plantarch.cmd.MainKt"
-      classPath.addAll(job.classPaths.stream().toList())
-      workingDirectory = workingDir
-      vmParametersList.add("-Xmx4g")
-    }.toCommandLine().withCharset(StandardCharsets.UTF_8)
+    val jdkHome = relevantJdk.homePath ?: error("JDK home not found")
+
+    val tempArgsFile = Files.createTempFile("plantarch-cp", ".txt").toFile()
+    val cpString = job.classPaths.joinToString(File.pathSeparator) { it }
+    tempArgsFile.writeText("-cp\n\"$cpString\"\ntech.dolch.plantarch.cmd.MainKt")
+
+    val javaExe = Path.of(jdkHome, "bin", "java").toString()
+    return GeneralCommandLine(javaExe, "@${tempArgsFile.absolutePath}")
+      .withWorkDirectory(Path.of(PathManager.getPluginsPath(), "plantarch-intellij-plugin", "lib").toFile())
+      .withCharset(StandardCharsets.UTF_8)
+      .withEnvironment(mapOf("JAVA_TOOL_OPTIONS" to "-Xmx4g"))
   }
 
   private fun compileSynchronously(project: Project): Boolean {
@@ -169,6 +172,8 @@ object ExecPlantArch {
 
       var plantuml = rawPlantuml
 
+      if (plantuml.lines().size < 5) return;
+
       // remove transmission boilerplate
       plantuml = plantuml.lines().subList(1, plantuml.lines().size - 3).joinToString("\n")
 
@@ -190,8 +195,8 @@ object ExecPlantArch {
       // update Plugins-Panel
       project.getUserData(PANEL_KEY)!!.updatePanel(jobParams)
       // Write and open Editor
-      val virtualFile =
-        VirtualFileManager.getInstance().findFileByUrl("file://${jobParams.optionPanelState.targetPumlFile}")!!
+      val virtualFile = VirtualFileManager.getInstance()
+        .findFileByUrl("file://${jobParams.optionPanelState.targetPumlFile}")!!
       ApplicationManager.getApplication().invokeLater {
         ApplicationManager.getApplication().runWriteAction {
           VfsUtil.saveText(virtualFile, plantuml)
