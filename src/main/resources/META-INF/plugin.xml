@@ -11,10 +11,15 @@
     <actions>
         <action id="PlantArch.ShowDiagram"
                 class="com.github.mrdolch.plantarchintellijplugin.toolWindow.ActionStartNewDiagram"
-                text="Render Dependency Diagram"/>
+                text="Render PlantArch Diagram"/>
     </actions>
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow id="PlantArch" anchor="bottom"
                     factoryClass="com.github.mrdolch.plantarchintellijplugin.toolWindow.PlantArchToolWindowFactory"/>
     </extensions>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <postStartupActivity implementation="com.github.mrdolch.plantarchintellijplugin.toolWindow.StartupListener"/>
+    </extensions>
+
 </idea-plugin>

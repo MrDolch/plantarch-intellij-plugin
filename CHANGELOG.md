@@ -4,6 +4,14 @@
 
 ## [Unreleased]
 
+## [0.1.2] - 2025-06-23
+
+- Enable on Kotlin-Projects
+- Enable on Gradle-Projects
+- Fix panel init
+- Fix to long path
+- Fix plugin link
+
 ## [0.1.1] - 2025-06-19
 
 - Fix Exceptions on first run

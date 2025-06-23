@@ -1,14 +1,10 @@
 package com.github.mrdolch.plantarchintellijplugin.toolWindow
 
-import com.intellij.ide.highlighter.JavaFileType
-
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.event.SelectionEvent
 import com.intellij.openapi.editor.event.SelectionListener
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.FileEditorManagerEvent
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
-import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.findPsiFile
@@ -16,6 +12,9 @@ import kotlinx.serialization.json.Json
 import tech.dolch.plantarch.cmd.IdeaRenderJob
 
 const val FILE_PREFIX_DEPENDENCY_DIAGRAM = "dependency-diagram-"
+
+fun isJavaFile(file: VirtualFile, project: Project): Boolean =
+  file.findPsiFile(project) is com.intellij.psi.PsiClassOwner
 
 class DiagramFileListener(
   private val optionsPanel: PanelDiagramOptions
@@ -26,12 +25,10 @@ class DiagramFileListener(
     when {
       newFile == null -> {}
       isDiagramFile(newFile) -> readOptionsFromDiagramFile(newFile)
-      isJavaFile(newFile) -> createOptionsFromFile(newFile, event.manager.project)
+      isJavaFile(newFile, event.manager.project) -> optionsPanel.createOptionsFromFile(newFile, event.manager.project)
     }
   }
 
-  private fun isJavaFile(file: VirtualFile): Boolean =
-    file.fileType == JavaFileType.INSTANCE
 
   private fun isDiagramFile(file: VirtualFile): Boolean =
     file.name.startsWith(FILE_PREFIX_DEPENDENCY_DIAGRAM) && file.extension == "puml"
@@ -46,19 +43,6 @@ class DiagramFileListener(
     }
   }
 
-  private fun createOptionsFromFile(file: VirtualFile, project: Project) {
-    ApplicationManager.getApplication().executeOnPooledThread {
-      ApplicationManager.getApplication().runReadAction {
-        val psiClassOwner = file.findPsiFile(project) as? com.intellij.psi.PsiClassOwner
-        val className = psiClassOwner?.classes?.firstOrNull()?.qualifiedName
-        if (className != null) {
-          val module = ModuleUtil.findModuleForPsiElement(psiClassOwner)
-          val ideaRenderJob = createIdeaRenderJob(project, module!!, className)
-          optionsPanel.updatePanel(ideaRenderJob)
-        }
-      }
-    }
-  }
 
   private fun registerSelectionListener(project: Project, optionsPanel: PanelDiagramOptions) {
     val editor = FileEditorManager.getInstance(project).selectedTextEditor ?: return
@@ -74,3 +58,4 @@ class DiagramFileListener(
     })
   }
 }
+
