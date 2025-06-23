@@ -172,7 +172,7 @@ object ExecPlantArch {
 
       var plantuml = rawPlantuml
 
-      if (plantuml.lines().size < 5) return;
+      if (plantuml.lines().size < 5) return
 
       // remove transmission boilerplate
       plantuml = plantuml.lines().subList(1, plantuml.lines().size - 3).joinToString("\n")
@@ -190,18 +190,19 @@ object ExecPlantArch {
         "@startuml\n' ${Json.encodeToString(jobParams)}\n!pragma layout smetana\n"
       )
 
-
-      val project = getProjectByName(jobParams.projectName)
-      // update Plugins-Panel
-      project.getUserData(PANEL_KEY)!!.updatePanel(jobParams)
-      // Write and open Editor
-      val virtualFile = VirtualFileManager.getInstance()
-        .findFileByUrl("file://${jobParams.optionPanelState.targetPumlFile}")!!
       ApplicationManager.getApplication().invokeLater {
-        ApplicationManager.getApplication().runWriteAction {
-          VfsUtil.saveText(virtualFile, plantuml)
+        val project = getProjectByName(jobParams.projectName)
+        // update Plugins-Panel
+        project.getUserData(PANEL_KEY)!!.updatePanel(jobParams)
+        // Write and open Editor
+        val virtualFile = VirtualFileManager.getInstance()
+          .refreshAndFindFileByUrl("file://${jobParams.optionPanelState.targetPumlFile}")
+        if (virtualFile != null) {
+          ApplicationManager.getApplication().runWriteAction {
+            VfsUtil.saveText(virtualFile, plantuml)
+          }
+          FileEditorManager.getInstance(project).openFile(virtualFile)
         }
-        FileEditorManager.getInstance(project).openFile(virtualFile)
       }
     }
   }
