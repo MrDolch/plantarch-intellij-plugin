@@ -4,6 +4,12 @@
 
 ## [Unreleased]
 
+## [0.1.4] - 2025-06-26
+
+- Switch for show method names
+- Switch for show packages
+- Show inheritance in context classes too
+
 ## [0.1.3] - 2025-06-23
 
 - Fix NPE on analyzing
@@ -13,7 +19,7 @@
 - Enable on Kotlin-Projects
 - Enable on Gradle-Projects
 - Fix panel init
-- Fix to long path
+- Fix too long path
 - Fix plugin link
 
 ## [0.1.1] - 2025-06-19

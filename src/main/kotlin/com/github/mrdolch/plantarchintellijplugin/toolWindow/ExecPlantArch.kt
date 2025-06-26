@@ -21,6 +21,7 @@ import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFileManager
 import kotlinx.serialization.json.Json
 import tech.dolch.plantarch.cmd.IdeaRenderJob
+import tech.dolch.plantarch.cmd.ShowPackages
 import java.io.File
 import java.lang.System.err
 import java.nio.charset.StandardCharsets
@@ -177,11 +178,11 @@ object ExecPlantArch {
       // remove transmission boilerplate
       plantuml = plantuml.lines().subList(1, plantuml.lines().size - 3).joinToString("\n")
 
-      if (jobParams.optionPanelState.flatPackages) {
+      if (jobParams.optionPanelState.showPackages == ShowPackages.FLAT) {
         plantuml = plantuml.replace("\\.(?=[A-Z])".toRegex(), "::")
           .replaceFirst("@startuml\n", "@startuml\nset namespaceSeparator ::")
       }
-      if (!jobParams.optionPanelState.showPackages) {
+      if (jobParams.optionPanelState.showPackages == ShowPackages.NONE) {
         plantuml = plantuml.replace("\\b[a-z.]+\\.(?=[A-Z])".toRegex(), "")
       }
       // insert parameters as comment

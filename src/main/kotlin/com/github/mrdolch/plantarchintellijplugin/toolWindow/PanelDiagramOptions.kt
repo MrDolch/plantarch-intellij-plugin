@@ -4,6 +4,7 @@ import com.github.mrdolch.plantarchintellijplugin.toolWindow.ExecPlantArch.runAn
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.findPsiFile
 import com.intellij.ui.components.JBList
@@ -11,9 +12,12 @@ import com.intellij.ui.table.TableView
 import com.intellij.util.ui.ColumnInfo
 import com.intellij.util.ui.FormBuilder
 import com.intellij.util.ui.ListTableModel
+import tech.dolch.plantarch.ClassDiagram
 import tech.dolch.plantarch.cmd.IdeaRenderJob
+import tech.dolch.plantarch.cmd.ShowPackages
 import java.awt.BorderLayout
 import java.awt.Component
+import java.awt.FlowLayout
 import java.awt.GridLayout
 import javax.swing.*
 import javax.swing.border.TitledBorder
@@ -23,14 +27,14 @@ class PanelDiagramOptions : JPanel(BorderLayout()) {
   private val containersBox = JBList<String>()
   private val umlOptionsPanel = UmlOptionsPanel(this)
   private var jobParams: IdeaRenderJob? = null
-  private val classesTable: ListTableModel<ClassEntry>
+  val classesTable: ListTableModel<ClassEntry>
 
 
   init {
     layout = GridLayout(1, 4)
 
     add(JScrollPane(umlOptionsPanel).apply { border = TitledBorder("Optionen") })
-    umlOptionsPanel.showMethodNamesCheckbox.addItemListener { updateDiagram() }
+    umlOptionsPanel.showMethodNamesDropdown.addItemListener { updateDiagram() }
 
     classesTable = ListTableModel<ClassEntry>(
       object : ColumnInfo<ClassEntry, String>("Klasse") {
@@ -131,14 +135,11 @@ class PanelDiagramOptions : JPanel(BorderLayout()) {
         .map { i -> containersBox.model.getElementAt(i) }
         .minus(containersBox.selectedValuesList.toSet())
       it.classesToHide = classesTable.items.filter { c -> !c.isVisible }.map { c -> c.name }
-      it.showUseByMethodNames = umlOptionsPanel.showMethodNamesCheckbox.isSelected
+      it.showUseByMethodNames = umlOptionsPanel.showMethodNamesDropdown.selectedItem as ClassDiagram.UseByMethodNames
       it.title = umlOptionsPanel.titleField.text
       it.description = umlOptionsPanel.descriptionArea.text
     }
-    jobParams!!.optionPanelState.let {
-      it.showPackages = umlOptionsPanel.showPackagesCheckbox.isSelected
-      it.flatPackages = umlOptionsPanel.flatPackagesCheckbox.isSelected
-    }
+    jobParams!!.optionPanelState.showPackages = umlOptionsPanel.showPackagesDropdown.selectedItem as ShowPackages
 
     runAnalyzerBackgroundTask(jobParams!!, false)
   }
@@ -171,19 +172,14 @@ class PanelDiagramOptions : JPanel(BorderLayout()) {
     )
     umlOptionsPanel.titleField.text = jobParams.renderJob.classDiagrams.title
     umlOptionsPanel.descriptionArea.text = jobParams.renderJob.classDiagrams.description
-    umlOptionsPanel.showMethodNamesCheckbox.let {
+    umlOptionsPanel.showMethodNamesDropdown.let {
       it.itemListeners.forEach { listener -> it.removeItemListener(listener) }
-      it.isSelected = jobParams.renderJob.classDiagrams.showUseByMethodNames
+      it.selectedItem = jobParams.renderJob.classDiagrams.showUseByMethodNames
       it.addItemListener { updateDiagram() }
     }
-    umlOptionsPanel.showPackagesCheckbox.let {
+    umlOptionsPanel.showPackagesDropdown.let {
       it.itemListeners.forEach { listener -> it.removeItemListener(listener) }
-      it.isSelected = jobParams.optionPanelState.showPackages
-      it.addItemListener { updateDiagram() }
-    }
-    umlOptionsPanel.flatPackagesCheckbox.let {
-      it.itemListeners.forEach { listener -> it.removeItemListener(listener) }
-      it.isSelected = jobParams.optionPanelState.flatPackages
+      it.selectedItem = jobParams.optionPanelState.showPackages
       it.addItemListener { updateDiagram() }
     }
   }
@@ -223,9 +219,8 @@ class UmlOptionsPanel(private val panelDiagramOptions: PanelDiagramOptions) : JP
 
   val titleField = JTextField()
   val descriptionArea = JTextArea(5, 20)
-  val showMethodNamesCheckbox = JCheckBox("show method names")
-  val showPackagesCheckbox = JCheckBox("show packages")
-  val flatPackagesCheckbox = JCheckBox("flat packages")
+  val showMethodNamesDropdown = ComboBox(ClassDiagram.UseByMethodNames.entries.toTypedArray())
+  val showPackagesDropdown = ComboBox(ShowPackages.entries.toTypedArray())
 
   init {
     this.add(
@@ -241,9 +236,15 @@ class UmlOptionsPanel(private val panelDiagramOptions: PanelDiagramOptions) : JP
           })
           .addComponent(JPanel(GridLayout(0, 1)).apply {
             border = BorderFactory.createTitledBorder("Options")
-            add(showMethodNamesCheckbox)
-            add(showPackagesCheckbox)
-            add(flatPackagesCheckbox)
+            add(JPanel(FlowLayout(FlowLayout.LEFT)).apply {
+              add(JLabel("Show method names:"))
+              add(showMethodNamesDropdown)
+            })
+            add(JPanel(FlowLayout(FlowLayout.LEFT)).apply {
+              add(JLabel("Show packages:"))
+              add(showPackagesDropdown)
+              showPackagesDropdown.selectedItem = ShowPackages.NESTED
+            })
           }).panel
       ), BorderLayout.NORTH
     )

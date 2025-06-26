@@ -17,6 +17,7 @@ import kotlinx.collections.immutable.toImmutableSet
 import tech.dolch.plantarch.cmd.IdeaRenderJob
 import tech.dolch.plantarch.cmd.OptionPanelState
 import tech.dolch.plantarch.cmd.RenderJob
+import tech.dolch.plantarch.cmd.ShowPackages
 import java.io.File
 import kotlin.io.path.absolutePathString
 
@@ -47,8 +48,7 @@ fun createIdeaRenderJob(
     classPaths = module.getClasspath(),
     optionPanelState = OptionPanelState(
       targetPumlFile = File.createTempFile(FILE_PREFIX_DEPENDENCY_DIAGRAM, ".puml").absolutePath,
-      showPackages = true,
-      flatPackages = false,
+      showPackages = ShowPackages.NESTED,
       classesInFocus = listOf(className),
       classesInFocusSelected = listOf(className),
       hiddenContainers = listOf("jrt"),
@@ -70,7 +70,7 @@ fun createIdeaRenderJob(
 }
 
 fun Module.getClasspath(): ImmutableSet<String> {
-  val classpath = mutableSetOf("plantarch-0.1.10-launcher.jar")
+  val classpath = mutableSetOf("plantarch-0.1.12-launcher.jar")
   // 2. Abhängigkeiten (Libraries, andere Module)
   ModuleRootManager.getInstance(this)
     .orderEntries()
