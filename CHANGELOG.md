@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+## [0.1.5] - 2025-06-27
+
+- Fix temp-path-problem on Windows
+
 ## [0.1.4] - 2025-06-26
 
 - Switch for show method names

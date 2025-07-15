@@ -5,10 +5,13 @@ import com.intellij.execution.process.CapturingProcessAdapter
 import com.intellij.execution.process.OSProcessHandler
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessHandler
+import com.intellij.ide.plugins.PluginManagerCore
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.compiler.CompilerManager
+import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
@@ -16,11 +19,18 @@ import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.projectRoots.Sdk
+import com.intellij.openapi.roots.CompilerModuleExtension
+import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFileManager
+import com.intellij.openapi.vfs.toNioPathOrNull
+import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.serialization.json.Json
 import tech.dolch.plantarch.cmd.IdeaRenderJob
+import tech.dolch.plantarch.cmd.OptionPanelState
+import tech.dolch.plantarch.cmd.RenderJob
 import tech.dolch.plantarch.cmd.ShowPackages
 import java.io.File
 import java.lang.System.err
@@ -31,9 +41,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
-
-fun getProjectByName(projectName: String) =
-  ProjectManager.getInstance().openProjects.first { it.name == projectName }
+import kotlin.io.path.absolutePathString
 
 object ExecPlantArch {
 
@@ -106,12 +114,14 @@ object ExecPlantArch {
     val jdkHome = relevantJdk.homePath ?: error("JDK home not found")
 
     val tempArgsFile = Files.createTempFile("plantarch-cp", ".txt").toFile()
-    val cpString = job.classPaths.joinToString(File.pathSeparator) { it }
-    tempArgsFile.writeText("-cp\n\"$cpString\"\ntech.dolch.plantarch.cmd.MainKt")
+    val cpString = job.classPaths.joinToString(File.pathSeparator) { File(it).canonicalPath }
+    tempArgsFile.writeText("-cp\n$cpString\ntech.dolch.plantarch.cmd.MainKt")
 
     val javaExe = Path.of(jdkHome, "bin", "java").toString()
-    return GeneralCommandLine(javaExe, "@${tempArgsFile.absolutePath}")
-      .withWorkDirectory(Path.of(PathManager.getPluginsPath(), "plantarch-intellij-plugin", "lib").toFile())
+    return GeneralCommandLine(javaExe, "@${tempArgsFile.canonicalPath}")
+      .withWorkDirectory(
+        Path.of(PathManager.getPluginsPath(), "plantarch-intellij-plugin", "lib").toFile().canonicalPath
+      )
       .withCharset(StandardCharsets.UTF_8)
       .withEnvironment(mapOf("JAVA_TOOL_OPTIONS" to "-Xmx4g"))
   }
@@ -209,3 +219,61 @@ object ExecPlantArch {
   }
 
 }
+
+fun createIdeaRenderJob(
+  project: Project,
+  module: Module,
+  className: String
+): IdeaRenderJob {
+  val jobParams = IdeaRenderJob(
+    projectName = project.name,
+    moduleName = module.name,
+    classPaths = module.getClasspath(),
+    optionPanelState = OptionPanelState(
+      targetPumlFile = File.createTempFile(FILE_PREFIX_DEPENDENCY_DIAGRAM, ".puml").canonicalPath,
+      showPackages = ShowPackages.NESTED,
+      classesInFocus = listOf(className),
+      classesInFocusSelected = listOf(className),
+      hiddenContainers = listOf("jrt"),
+      hiddenContainersSelected = listOf("jrt"),
+      hiddenClasses = listOf(),
+      hiddenClassesSelected = listOf(),
+    ),
+    renderJob = RenderJob(
+      classDiagrams = RenderJob.ClassDiagramParams(
+        title = "Dependencies of ${className.replaceBeforeLast(".", "").substring(1)}",
+        description = "",
+        classesToAnalyze = listOf(className),
+        containersToHide = listOf("jrt"),
+        workingDir = project.basePath!!
+      ),
+    ),
+  )
+  return jobParams
+}
+
+fun Module.getClasspath(): ImmutableSet<String> {
+  val plugin = PluginManagerCore.getPlugin(PluginId.getId("com.github.mrdolch.plantarchintellijplugin"))
+  val pluginPath = plugin?.pluginPath?.toFile()
+  val jarPath = pluginPath?.resolve("lib/plantarch-0.1.12-launcher.jar")?.canonicalPath
+  val classpath = mutableSetOf(jarPath!!)
+
+  // 2. Abhängigkeiten (Libraries, andere Module)
+  ModuleRootManager.getInstance(this)
+    .orderEntries()
+    .productionOnly()
+    .classes()
+    .roots
+    .map { File(it.path).toPath() }
+    .map { it.absolutePathString() }
+    .map { it.removeSuffix("!") }
+    .forEach { classpath.add(it) }
+  // 1. Eigene kompilierten Klassen
+  CompilerModuleExtension.getInstance(this)?.compilerOutputPath?.let {
+    it.toNioPathOrNull()?.let { path -> classpath.add(path.absolutePathString()) }
+  }
+  return classpath.toImmutableSet()
+}
+
+fun getProjectByName(projectName: String) =
+  ProjectManager.getInstance().openProjects.first { it.name == projectName }

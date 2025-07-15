@@ -4,20 +4,17 @@ import com.github.mrdolch.plantarchintellijplugin.toolWindow.ExecPlantArch.runAn
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.findPsiFile
 import com.intellij.ui.components.JBList
 import com.intellij.ui.table.TableView
 import com.intellij.util.ui.ColumnInfo
-import com.intellij.util.ui.FormBuilder
 import com.intellij.util.ui.ListTableModel
 import tech.dolch.plantarch.ClassDiagram
 import tech.dolch.plantarch.cmd.IdeaRenderJob
 import tech.dolch.plantarch.cmd.ShowPackages
 import java.awt.BorderLayout
 import java.awt.Component
-import java.awt.FlowLayout
 import java.awt.GridLayout
 import javax.swing.*
 import javax.swing.border.TitledBorder
@@ -25,7 +22,7 @@ import javax.swing.border.TitledBorder
 class PanelDiagramOptions : JPanel(BorderLayout()) {
 
   private val containersBox = JBList<String>()
-  private val umlOptionsPanel = UmlOptionsPanel(this)
+  private val umlOptionsPanel = UmlOptionsPanel { this.updateDiagram() }
   private var jobParams: IdeaRenderJob? = null
   val classesTable: ListTableModel<ClassEntry>
 
@@ -209,44 +206,3 @@ class PanelDiagramOptions : JPanel(BorderLayout()) {
 }
 
 
-data class ClassEntry(
-  val name: String,
-  var isAnalyzed: Boolean,
-  var isVisible: Boolean
-)
-
-class UmlOptionsPanel(private val panelDiagramOptions: PanelDiagramOptions) : JPanel(BorderLayout()) {
-
-  val titleField = JTextField()
-  val descriptionArea = JTextArea(5, 20)
-  val showMethodNamesDropdown = ComboBox(ClassDiagram.UseByMethodNames.entries.toTypedArray())
-  val showPackagesDropdown = ComboBox(ShowPackages.entries.toTypedArray())
-
-  init {
-    this.add(
-      JScrollPane(
-        FormBuilder.createFormBuilder()
-          .addLabeledComponent("Title:", titleField)
-          .addComponent(JPanel(GridLayout(0, 1)).apply {
-            border = BorderFactory.createTitledBorder("Description")
-            add(JScrollPane(descriptionArea))
-          })
-          .addLabeledComponent("", JButton("Render diagram").apply {
-            addActionListener { panelDiagramOptions.updateDiagram() }
-          })
-          .addComponent(JPanel(GridLayout(0, 1)).apply {
-            border = BorderFactory.createTitledBorder("Options")
-            add(JPanel(FlowLayout(FlowLayout.LEFT)).apply {
-              add(JLabel("Show method names:"))
-              add(showMethodNamesDropdown)
-            })
-            add(JPanel(FlowLayout(FlowLayout.LEFT)).apply {
-              add(JLabel("Show packages:"))
-              add(showPackagesDropdown)
-              showPackagesDropdown.selectedItem = ShowPackages.NESTED
-            })
-          }).panel
-      ), BorderLayout.NORTH
-    )
-  }
-}

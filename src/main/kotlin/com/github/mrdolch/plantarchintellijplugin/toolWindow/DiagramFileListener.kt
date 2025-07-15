@@ -13,8 +13,6 @@ import tech.dolch.plantarch.cmd.IdeaRenderJob
 
 const val FILE_PREFIX_DEPENDENCY_DIAGRAM = "dependency-diagram-"
 
-fun isJavaFile(file: VirtualFile, project: Project): Boolean =
-  file.findPsiFile(project) is com.intellij.psi.PsiClassOwner
 
 class DiagramFileListener(
   private val optionsPanel: PanelDiagramOptions
@@ -29,6 +27,8 @@ class DiagramFileListener(
     }
   }
 
+  private fun isJavaFile(file: VirtualFile, project: Project): Boolean =
+    file.findPsiFile(project) is com.intellij.psi.PsiClassOwner
 
   private fun isDiagramFile(file: VirtualFile): Boolean =
     file.name.startsWith(FILE_PREFIX_DEPENDENCY_DIAGRAM) && file.extension == "puml"

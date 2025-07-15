@@ -48,10 +48,8 @@ dependencies {
 
     // Plugin Dependencies. Uses `platformPlugins` property from the gradle.properties file for plugin from JetBrains Marketplace.
     plugins(providers.gradleProperty("platformPlugins").map { it.split(',') })
-    plugin("PlantUML integration:7.11.2-IJ2023.2")
 
     testFramework(TestFrameworkType.Platform)
-
   }
 }
 
