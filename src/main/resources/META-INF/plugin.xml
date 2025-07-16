@@ -10,16 +10,16 @@
 
     <actions>
         <action id="PlantArch.ShowDiagram"
-                class="com.github.mrdolch.plantarchintellijplugin.toolWindow.ActionStartNewDiagram"
+                class="com.github.mrdolch.plantarchintellijplugin.diagram.ActionStartNewDiagram"
                 text="Render PlantArch Diagram"/>
     </actions>
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow id="PlantArch" anchor="bottom"
-                    factoryClass="com.github.mrdolch.plantarchintellijplugin.toolWindow.PlantArchToolWindowFactory"/>
+                    factoryClass="com.github.mrdolch.plantarchintellijplugin.app.PlantArchToolWindowFactory"/>
     </extensions>
 
     <extensions defaultExtensionNs="com.intellij">
-        <postStartupActivity implementation="com.github.mrdolch.plantarchintellijplugin.toolWindow.StartupListener"/>
+        <postStartupActivity implementation="com.github.mrdolch.plantarchintellijplugin.app.StartupListener"/>
     </extensions>
 
 </idea-plugin>

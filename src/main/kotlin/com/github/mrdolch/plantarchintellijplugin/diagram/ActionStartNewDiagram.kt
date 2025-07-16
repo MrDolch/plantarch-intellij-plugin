@@ -1,6 +1,5 @@
-package com.github.mrdolch.plantarchintellijplugin.toolWindow
+package com.github.mrdolch.plantarchintellijplugin.diagram
 
-import com.github.mrdolch.plantarchintellijplugin.toolWindow.ExecPlantArch.runAnalyzerBackgroundTask
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.fileEditor.FileEditorManager
@@ -17,10 +16,8 @@ class ActionStartNewDiagram : AnAction() {
         PsiDocumentManager.getInstance(project).getPsiFile(editor.document) as? PsiClassOwner ?: return
       val className = psiFile.classes.firstOrNull()?.qualifiedName ?: return
       val module = ModuleUtil.findModuleForPsiElement(psiFile) ?: return
-      val jobParams = createIdeaRenderJob(project, module, className)
-      runAnalyzerBackgroundTask(jobParams, false)
+      val jobParams = createIdeaRenderJob(module, className)
+      ExecPlantArch.runAnalyzerBackgroundTask(jobParams, false)
     }
   }
 }
-
-

@@ -1,11 +1,13 @@
-package com.github.mrdolch.plantarchintellijplugin.toolWindow
+package com.github.mrdolch.plantarchintellijplugin.panel
 
-import com.github.mrdolch.plantarchintellijplugin.toolWindow.ExecPlantArch.runAnalyzerBackgroundTask
+import com.github.mrdolch.plantarchintellijplugin.diagram.ExecPlantArch
+import com.github.mrdolch.plantarchintellijplugin.diagram.createIdeaRenderJob
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.findPsiFile
+import com.intellij.psi.PsiClassOwner
 import com.intellij.ui.components.JBList
 import com.intellij.ui.table.TableView
 import com.intellij.util.ui.ColumnInfo
@@ -113,11 +115,11 @@ class PanelDiagramOptions : JPanel(BorderLayout()) {
   fun createOptionsFromFile(file: VirtualFile, project: Project) {
     ApplicationManager.getApplication().executeOnPooledThread {
       ApplicationManager.getApplication().runReadAction {
-        val psiClassOwner = file.findPsiFile(project) as? com.intellij.psi.PsiClassOwner
+        val psiClassOwner = file.findPsiFile(project) as? PsiClassOwner
         val className = psiClassOwner?.classes?.firstOrNull()?.qualifiedName
         if (className != null) {
           val module = ModuleUtil.findModuleForPsiElement(psiClassOwner)
-          val ideaRenderJob = createIdeaRenderJob(project, module!!, className)
+          val ideaRenderJob = createIdeaRenderJob(module!!, className)
           updatePanel(ideaRenderJob)
         }
       }
@@ -138,7 +140,7 @@ class PanelDiagramOptions : JPanel(BorderLayout()) {
     }
     jobParams!!.optionPanelState.showPackages = umlOptionsPanel.showPackagesDropdown.selectedItem as ShowPackages
 
-    runAnalyzerBackgroundTask(jobParams!!, false)
+    ExecPlantArch.runAnalyzerBackgroundTask(jobParams!!, false)
   }
 
 
@@ -179,6 +181,7 @@ class PanelDiagramOptions : JPanel(BorderLayout()) {
       it.selectedItem = jobParams.optionPanelState.showPackages
       it.addItemListener { updateDiagram() }
     }
+    umlOptionsPanel.projectNameField.text = jobParams.projectName
   }
 
   fun toggleEntryFromDiagram(text: String) {
@@ -204,5 +207,3 @@ class PanelDiagramOptions : JPanel(BorderLayout()) {
     if (hasChanged) updateDiagram()
   }
 }
-
-

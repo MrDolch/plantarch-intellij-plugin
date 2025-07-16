@@ -5,14 +5,25 @@ skinparam monochrome false
 ** ☐ I18n
 
 * <color:red> ☐ Bugs
+** ☐ Class<<data>> in gefundene Klassen
+** ☐ NPE bei geänderten Klassennamen oder -package
+** ☐ morkingDirs for Multimoduleprojekte
 
 * <color:blue> ☐ ToDos
 ** ☐ Renderer wiederverwenden
 ** ☐ Tests
 ** ☐ ToolWindow mit Diagramm
 ** ☐ Publish nach MavenLocal
+** ☐ Publish nach Intellij Market
+** ☐ Default-Options-Panel
+** ☐ Weitere Optionen
+*** ☐ Tree für Klassen-Selektion
+*** ☐ auto render
+*** ☐ auto compile
+*** ☐ show containers
 
-* <color:green> ☑ Features
+
+* <color:green> ☑ Features\n <color:green> implemented
 ** ☑ Analyse komp. Klassen
 ** ☑ Diagram in Editor öffnen
 ** ☑ gegebene Parameter im Diagramm

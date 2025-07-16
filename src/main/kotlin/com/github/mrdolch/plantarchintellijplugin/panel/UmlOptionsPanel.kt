@@ -1,4 +1,4 @@
-package com.github.mrdolch.plantarchintellijplugin.toolWindow
+package com.github.mrdolch.plantarchintellijplugin.panel
 
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.util.ui.FormBuilder
@@ -16,6 +16,7 @@ class UmlOptionsPanel(onRenderButton: (ActionEvent) -> Unit) : JPanel(BorderLayo
   val descriptionArea = JTextArea(5, 20)
   val showMethodNamesDropdown = ComboBox(ClassDiagram.UseByMethodNames.entries.toTypedArray())
   val showPackagesDropdown = ComboBox(ShowPackages.entries.toTypedArray())
+  val projectNameField = JLabel("Project")
 
   init {
     this.add(
@@ -40,6 +41,7 @@ class UmlOptionsPanel(onRenderButton: (ActionEvent) -> Unit) : JPanel(BorderLayo
               add(showPackagesDropdown)
               showPackagesDropdown.selectedItem = ShowPackages.NESTED
             })
+            add(projectNameField)
           }).panel
       ), BorderLayout.NORTH
     )

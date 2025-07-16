@@ -1,4 +1,4 @@
-package com.github.mrdolch.plantarchintellijplugin.toolWindow
+package com.github.mrdolch.plantarchintellijplugin.panel
 
 data class ClassEntry(
   val name: String,

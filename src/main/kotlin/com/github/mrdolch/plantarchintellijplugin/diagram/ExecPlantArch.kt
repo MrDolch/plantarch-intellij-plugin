@@ -1,5 +1,7 @@
-package com.github.mrdolch.plantarchintellijplugin.toolWindow
+package com.github.mrdolch.plantarchintellijplugin.diagram
 
+import com.github.mrdolch.plantarchintellijplugin.app.FILE_PREFIX_DEPENDENCY_DIAGRAM
+import com.github.mrdolch.plantarchintellijplugin.app.PANEL_KEY
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.CapturingProcessAdapter
 import com.intellij.execution.process.OSProcessHandler
@@ -13,6 +15,7 @@ import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleManager
+import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
@@ -221,12 +224,11 @@ object ExecPlantArch {
 }
 
 fun createIdeaRenderJob(
-  project: Project,
   module: Module,
   className: String
 ): IdeaRenderJob {
   val jobParams = IdeaRenderJob(
-    projectName = project.name,
+    projectName = module.project.name,
     moduleName = module.name,
     classPaths = module.getClasspath(),
     optionPanelState = OptionPanelState(
@@ -245,7 +247,7 @@ fun createIdeaRenderJob(
         description = "",
         classesToAnalyze = listOf(className),
         containersToHide = listOf("jrt"),
-        workingDir = project.basePath!!
+        workingDir = ModuleUtil.getModuleDirPath(module)
       ),
     ),
   )

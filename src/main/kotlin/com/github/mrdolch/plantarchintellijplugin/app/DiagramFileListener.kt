@@ -1,5 +1,8 @@
-package com.github.mrdolch.plantarchintellijplugin.toolWindow
+package com.github.mrdolch.plantarchintellijplugin.app
 
+import com.github.mrdolch.plantarchintellijplugin.diagram.getProjectByName
+import com.github.mrdolch.plantarchintellijplugin.panel.PanelDiagramOptions
+import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.event.SelectionEvent
 import com.intellij.openapi.editor.event.SelectionListener
 import com.intellij.openapi.fileEditor.FileEditorManager
@@ -8,6 +11,7 @@ import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.findPsiFile
+import com.intellij.psi.PsiClassOwner
 import kotlinx.serialization.json.Json
 import tech.dolch.plantarch.cmd.IdeaRenderJob
 
@@ -28,7 +32,7 @@ class DiagramFileListener(
   }
 
   private fun isJavaFile(file: VirtualFile, project: Project): Boolean =
-    file.findPsiFile(project) is com.intellij.psi.PsiClassOwner
+    file.findPsiFile(project) is PsiClassOwner
 
   private fun isDiagramFile(file: VirtualFile): Boolean =
     file.name.startsWith(FILE_PREFIX_DEPENDENCY_DIAGRAM) && file.extension == "puml"
@@ -39,23 +43,31 @@ class DiagramFileListener(
     content.lines().getOrNull(1)?.drop(1)?.let { json ->
       val jobParams = Json.decodeFromString<IdeaRenderJob>(json)
       optionsPanel.updatePanel(jobParams)
-      registerSelectionListener(getProjectByName(jobParams.projectName), optionsPanel)
+      registerSelectionListenerOnPlantUmlView(getProjectByName(jobParams.projectName), optionsPanel)
     }
   }
 
 
-  private fun registerSelectionListener(project: Project, optionsPanel: PanelDiagramOptions) {
+  private fun registerSelectionListenerOnPlantUmlView(project: Project, optionsPanel: PanelDiagramOptions) {
     val editor = FileEditorManager.getInstance(project).selectedTextEditor ?: return
     val selectionModel = editor.selectionModel
 
     selectionModel.addSelectionListener(object : SelectionListener {
       override fun selectionChanged(e: SelectionEvent) {
-        val selectedText = e.newRange?.let { range ->
-          editor.document.getText(range)
-        }
-        if (selectedText != null) optionsPanel.toggleEntryFromDiagram(selectedText)
+        handleSelectionChanged(e, editor, optionsPanel)
       }
     })
+  }
+
+  private fun handleSelectionChanged(
+    e: SelectionEvent,
+    editor: Editor,
+    optionsPanel: PanelDiagramOptions
+  ) {
+    val selectedText = e.newRange?.let { range ->
+      editor.document.getText(range)
+    }
+    if (selectedText != null) optionsPanel.toggleEntryFromDiagram(selectedText)
   }
 }
 
