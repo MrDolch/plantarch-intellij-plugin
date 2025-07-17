@@ -21,6 +21,8 @@ skinparam monochrome false
 *** ☐ auto render
 *** ☐ auto compile
 *** ☐ show containers
+*** ☐ MArker interfaces
+*** ☐ Colors for MArker interfaces
 
 
 * <color:green> ☑ Features\n <color:green> implemented
