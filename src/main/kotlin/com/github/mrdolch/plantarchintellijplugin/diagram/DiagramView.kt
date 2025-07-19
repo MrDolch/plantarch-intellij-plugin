@@ -1,29 +1,21 @@
 package com.github.mrdolch.plantarchintellijplugin.diagram
 
+import com.charleskorn.kaml.Yaml
 import com.github.mrdolch.plantarchintellijplugin.app.PANEL_KEY
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFileManager
-import kotlinx.serialization.json.Json
 import tech.dolch.plantarch.cmd.IdeaRenderJob
 import tech.dolch.plantarch.cmd.ShowPackages
 
+const val MARKER_STARTCONFIG = "@startIdeaRenderJob"
+const val MARKER_ENDCONFIG = "@endIdeaRenderJob"
+
 object DiagramView {
   fun processDiagramViewUpdate(job: IdeaRenderJob, rawPlantuml: String) {
-    // Read Results
-    val allVisibleClasses = getAllVisibleClasses(rawPlantuml, job)
-    job.optionPanelState.classesInFocus = allVisibleClasses
-    job.optionPanelState.classesInFocusSelected = job.renderJob.classDiagrams.classesToAnalyze
-    job.optionPanelState.hiddenClasses = allVisibleClasses
-    job.optionPanelState.hiddenClassesSelected = job.renderJob.classDiagrams.classesToHide
 
-    job.optionPanelState.hiddenContainersSelected = job.renderJob.classDiagrams.containersToHide
-    job.optionPanelState.hiddenContainers = rawPlantuml.lineSequence()
-      .filter { it.startsWith("object ") }
-      .map { it.split('"')[1] }
-      .plus(job.optionPanelState.hiddenContainersSelected)
-      .sorted().distinct().toList()
+    updateJobsOptionPanelState(job, rawPlantuml)
 
     var plantuml = rawPlantuml
 
@@ -39,11 +31,9 @@ object DiagramView {
     if (job.optionPanelState.showPackages == ShowPackages.NONE) {
       plantuml = plantuml.replace("\\b[a-z.]+\\.(?=[A-Z])".toRegex(), "")
     }
-    // insert parameters as comment
-    plantuml = plantuml.replaceFirst(
-      "@startuml\n",
-      "@startuml\n' ${Json.Default.encodeToString(job)}\n!pragma layout smetana\n"
-    )
+
+    val jobYaml = Yaml.default.encodeToString(IdeaRenderJob.serializer(), job)
+    plantuml += "\n$MARKER_STARTCONFIG\n$jobYaml\n$MARKER_ENDCONFIG"
 
     ApplicationManager.getApplication().invokeLater {
       val project = getProjectByName(job.projectName)
@@ -59,6 +49,26 @@ object DiagramView {
         FileEditorManager.getInstance(project).openFile(virtualFile)
       }
     }
+  }
+
+  private fun updateJobsOptionPanelState(
+    job: IdeaRenderJob,
+    rawPlantuml: String
+  ) {
+    val allVisibleClasses = getAllVisibleClasses(rawPlantuml, job)
+
+    job.optionPanelState.classesInFocus = allVisibleClasses
+    job.optionPanelState.classesInFocusSelected = job.renderJob.classDiagrams.classesToAnalyze
+
+    job.optionPanelState.hiddenClasses = allVisibleClasses
+    job.optionPanelState.hiddenClassesSelected = job.renderJob.classDiagrams.classesToHide
+
+    job.optionPanelState.hiddenContainersSelected = job.renderJob.classDiagrams.containersToHide
+    job.optionPanelState.hiddenContainers = rawPlantuml.lineSequence()
+      .filter { it.startsWith("object ") }
+      .map { it.split('"')[1] }
+      .plus(job.optionPanelState.hiddenContainersSelected)
+      .sorted().distinct().toList()
   }
 
   private fun getAllVisibleClasses(

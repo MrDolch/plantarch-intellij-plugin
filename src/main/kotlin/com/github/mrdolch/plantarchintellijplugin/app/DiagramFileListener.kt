@@ -1,5 +1,8 @@
 package com.github.mrdolch.plantarchintellijplugin.app
 
+import com.charleskorn.kaml.Yaml
+import com.github.mrdolch.plantarchintellijplugin.diagram.MARKER_ENDCONFIG
+import com.github.mrdolch.plantarchintellijplugin.diagram.MARKER_STARTCONFIG
 import com.github.mrdolch.plantarchintellijplugin.diagram.getProjectByName
 import com.github.mrdolch.plantarchintellijplugin.panel.PanelDiagramOptions
 import com.intellij.openapi.editor.Editor
@@ -12,7 +15,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.findPsiFile
 import com.intellij.psi.PsiClassOwner
-import kotlinx.serialization.json.Json
 import tech.dolch.plantarch.cmd.IdeaRenderJob
 
 const val FILE_PREFIX_DEPENDENCY_DIAGRAM = "dependency-diagram-"
@@ -39,12 +41,12 @@ class DiagramFileListener(
 
   private fun readOptionsFromDiagramFile(file: VirtualFile) {
     // Beispiel: Lese Inhalt oder Metadaten und setze Felder im Panel
-    val content = String(file.contentsToByteArray())
-    content.lines().getOrNull(1)?.drop(1)?.let { json ->
-      val jobParams = Json.decodeFromString<IdeaRenderJob>(json)
-      optionsPanel.updatePanel(jobParams)
-      registerSelectionListenerOnPlantUmlView(getProjectByName(jobParams.projectName), optionsPanel)
-    }
+    val content = String(file.contentsToByteArray()).lines()
+    val configYaml = content.subList(content.indexOf(MARKER_STARTCONFIG) + 1, content.indexOf(MARKER_ENDCONFIG))
+    val jobParams = Yaml.default.decodeFromString(IdeaRenderJob.serializer(), configYaml.joinToString("\n"))
+
+    optionsPanel.updatePanel(jobParams)
+    registerSelectionListenerOnPlantUmlView(getProjectByName(jobParams.projectName), optionsPanel)
   }
 
 
