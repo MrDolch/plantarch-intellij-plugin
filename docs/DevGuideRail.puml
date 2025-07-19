@@ -21,6 +21,9 @@ skinparam monochrome false
 *** ☐ auto render
 *** ☐ auto compile
 *** ☐ show containers
+*** ☐ MArker interfaces
+*** ☐ Colors for MArker interfaces
+** ☐ selber Rendern statt via PlantUml-Plugin
 
 
 * <color:green> ☑ Features\n <color:green> implemented
