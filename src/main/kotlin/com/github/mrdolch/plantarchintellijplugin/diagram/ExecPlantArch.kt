@@ -1,7 +1,6 @@
 package com.github.mrdolch.plantarchintellijplugin.diagram
 
 import com.github.mrdolch.plantarchintellijplugin.app.FILE_PREFIX_DEPENDENCY_DIAGRAM
-import com.github.mrdolch.plantarchintellijplugin.app.PANEL_KEY
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.CapturingProcessAdapter
 import com.intellij.execution.process.OSProcessHandler
@@ -12,7 +11,6 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.compiler.CompilerManager
 import com.intellij.openapi.extensions.PluginId
-import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.module.ModuleUtil
@@ -21,12 +19,12 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
+import com.intellij.openapi.project.guessModuleDir
+import com.intellij.openapi.project.modules
 import com.intellij.openapi.projectRoots.Sdk
 import com.intellij.openapi.roots.CompilerModuleExtension
 import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.roots.ProjectRootManager
-import com.intellij.openapi.vfs.VfsUtil
-import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.openapi.vfs.toNioPathOrNull
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.toImmutableSet
@@ -77,12 +75,13 @@ object ExecPlantArch {
             }
 
             indicator.text = "Analyzing classes..."
-            val renderSuccess = executePlantArch(job)
-            if (!renderSuccess) return
+            val rawPlantUml = executePlantArch(job)
+            if (rawPlantUml == null) return
 
             indicator.text = "Updating UI..."
             ApplicationManager.getApplication().invokeLater {
               // Update your UI here
+              DiagramView.processDiagramViewUpdate(job, rawPlantUml)
             }
           } finally {
             TaskLock.isRunning.set(false) // Task wieder freigeben
@@ -98,17 +97,21 @@ object ExecPlantArch {
       })
   }
 
-  fun executePlantArch(job: IdeaRenderJob): Boolean {
+  fun executePlantArch(job: IdeaRenderJob): String? {
     val commandLine = createCommandLine(job)
     val doneLatch = CountDownLatch(1)
     with(OSProcessHandler(commandLine)) {
-      addProcessListener(RendererDoneListener(this, job) {
+      println(job)
+      val rendererDoneListener = RendererDoneListener(this, job) {
         doneLatch.countDown()
-      })
+      }
+      addProcessListener(rendererDoneListener)
       startNotify()
+      doneLatch.await(90, TimeUnit.SECONDS)
+      return rendererDoneListener.rawPlantUml
     }
-    return doneLatch.await(30, TimeUnit.SECONDS)
   }
+
 
   private fun createCommandLine(job: IdeaRenderJob): GeneralCommandLine {
     val project = getProjectByName(job.projectName)
@@ -117,7 +120,11 @@ object ExecPlantArch {
     val jdkHome = relevantJdk.homePath ?: error("JDK home not found")
 
     val tempArgsFile = Files.createTempFile("plantarch-cp", ".txt").toFile()
-    val cpString = job.classPaths.joinToString(File.pathSeparator) { File(it).canonicalPath }
+    val sortedClasspath = job.classPaths.map { File(it) }
+      .sortedBy { it.isDirectory() } // Project-Files first
+      .sortedBy { it.name.endsWith("-launcher.jar") } // Plugin-Lib last
+    println(sortedClasspath.joinToString("\n"))
+    val cpString = sortedClasspath.joinToString(File.pathSeparator) { it.canonicalPath }
     tempArgsFile.writeText("-cp\n$cpString\ntech.dolch.plantarch.cmd.MainKt")
 
     val javaExe = Path.of(jdkHome, "bin", "java").toString()
@@ -136,17 +143,16 @@ object ExecPlantArch {
         future.complete(!aborted && errors == 0)
       }
     }
-
-    return future.get() // blockiert bis fertig
+    return future.get()
   }
 
   internal class RendererDoneListener(
     private val processHandler: ProcessHandler,
     private val jobParams: IdeaRenderJob,
+    var rawPlantUml: String? = null,
     private val onDone: () -> Unit,
   ) : CapturingProcessAdapter() {
     override fun startNotified(event: ProcessEvent) {
-      println(jobParams)
       processHandler.processInput?.writer()?.use {
         it.write("${Json.encodeToString(jobParams.renderJob)}\n")
         it.write("exit\n")
@@ -157,68 +163,11 @@ object ExecPlantArch {
     override fun processTerminated(event: ProcessEvent) {
       when {
         event.exitCode != 0 -> err.println(output.stderr)
-        else -> processDiagramUpdate(output.stdout)
+        else -> rawPlantUml = output.stdout
       }
       onDone()
     }
 
-    private fun processDiagramUpdate(rawPlantuml: String) {
-      // Read Results
-      val allVisibleClasses = rawPlantuml.lineSequence()
-        .filter {
-          it.startsWith("enum ") || it.startsWith("class ")
-              || it.startsWith("abstract ") || it.startsWith("interface ")
-        }.map { it.split(' ')[1] }
-        .plus(jobParams.renderJob.classDiagrams.classesToAnalyze)
-        .plus(jobParams.renderJob.classDiagrams.classesToHide)
-        .sorted().distinct().toList()
-      jobParams.optionPanelState.classesInFocus = allVisibleClasses
-      jobParams.optionPanelState.classesInFocusSelected = jobParams.renderJob.classDiagrams.classesToAnalyze
-      jobParams.optionPanelState.hiddenClasses = allVisibleClasses
-      jobParams.optionPanelState.hiddenClassesSelected = jobParams.renderJob.classDiagrams.classesToHide
-
-      jobParams.optionPanelState.hiddenContainersSelected = jobParams.renderJob.classDiagrams.containersToHide
-      jobParams.optionPanelState.hiddenContainers = rawPlantuml.lineSequence()
-        .filter { it.startsWith("object ") }
-        .map { it.split('"')[1] }
-        .plus(jobParams.optionPanelState.hiddenContainersSelected)
-        .sorted().distinct().toList()
-
-      var plantuml = rawPlantuml
-
-      if (plantuml.lines().size < 5) return
-
-      // remove transmission boilerplate
-      plantuml = plantuml.lines().subList(1, plantuml.lines().size - 3).joinToString("\n")
-
-      if (jobParams.optionPanelState.showPackages == ShowPackages.FLAT) {
-        plantuml = plantuml.replace("\\.(?=[A-Z])".toRegex(), "::")
-          .replaceFirst("@startuml\n", "@startuml\nset namespaceSeparator ::")
-      }
-      if (jobParams.optionPanelState.showPackages == ShowPackages.NONE) {
-        plantuml = plantuml.replace("\\b[a-z.]+\\.(?=[A-Z])".toRegex(), "")
-      }
-      // insert parameters as comment
-      plantuml = plantuml.replaceFirst(
-        "@startuml\n",
-        "@startuml\n' ${Json.encodeToString(jobParams)}\n!pragma layout smetana\n"
-      )
-
-      ApplicationManager.getApplication().invokeLater {
-        val project = getProjectByName(jobParams.projectName)
-        // update Plugins-Panel
-        project.getUserData(PANEL_KEY)!!.updatePanel(jobParams)
-        // Write and open Editor
-        val virtualFile = VirtualFileManager.getInstance()
-          .refreshAndFindFileByUrl("file://${jobParams.optionPanelState.targetPumlFile}")
-        if (virtualFile != null) {
-          ApplicationManager.getApplication().runWriteAction {
-            VfsUtil.saveText(virtualFile, plantuml)
-          }
-          FileEditorManager.getInstance(project).openFile(virtualFile)
-        }
-      }
-    }
   }
 
 }
@@ -230,7 +179,7 @@ fun createIdeaRenderJob(
   val jobParams = IdeaRenderJob(
     projectName = module.project.name,
     moduleName = module.name,
-    classPaths = module.getClasspath(),
+    classPaths = module.project.modules.flatMap { it.getClasspath() }.toImmutableSet(),
     optionPanelState = OptionPanelState(
       targetPumlFile = File.createTempFile(FILE_PREFIX_DEPENDENCY_DIAGRAM, ".puml").canonicalPath,
       showPackages = ShowPackages.NESTED,
@@ -247,7 +196,10 @@ fun createIdeaRenderJob(
         description = "",
         classesToAnalyze = listOf(className),
         containersToHide = listOf("jrt"),
-        workingDir = ModuleUtil.getModuleDirPath(module)
+        projectDir = ModuleUtil.getModuleDirPath(module),
+        moduleDirs = module.project.modules
+          .map { it.guessModuleDir()?.canonicalPath ?: "" }
+          .filter { it.isNotBlank() }.toList()
       ),
     ),
   )
@@ -257,7 +209,7 @@ fun createIdeaRenderJob(
 fun Module.getClasspath(): ImmutableSet<String> {
   val plugin = PluginManagerCore.getPlugin(PluginId.getId("com.github.mrdolch.plantarchintellijplugin"))
   val pluginPath = plugin?.pluginPath?.toFile()
-  val jarPath = pluginPath?.resolve("lib/plantarch-0.1.12-launcher.jar")?.canonicalPath
+  val jarPath = pluginPath?.resolve("lib/plantarch-0.1.13-SNAPSHOT-launcher.jar")?.canonicalPath
   val classpath = mutableSetOf(jarPath!!)
 
   // 2. Abhängigkeiten (Libraries, andere Module)
