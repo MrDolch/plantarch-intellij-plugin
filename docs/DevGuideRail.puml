@@ -5,9 +5,7 @@ skinparam monochrome false
 ** ☐ I18n
 
 * <color:red> ☐ Bugs
-** ☐ Class<<data>> in gefundene Klassen
 ** ☐ NPE bei geänderten Klassennamen oder -package
-** ☐ morkingDirs for Multimoduleprojekte
 
 * <color:blue> ☐ ToDos
 ** ☐ Renderer wiederverwenden
@@ -34,5 +32,7 @@ skinparam monochrome false
 ** ☑ Wenn Diagramm im Focus, Parameter aus Diagramm lesen
 ** ☑ Konfigurationspanel
 ** ☑ Alle Parameter ins Params-Objekt
+** ☑ workingDirs for Multimoduleprojekte
+** ☑ Class<<data>> in gefundene Klassen
 
 @endmindmap

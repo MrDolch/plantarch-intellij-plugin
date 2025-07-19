@@ -1,9 +1,10 @@
-package com.github.mrdolch.plantarchintellijplugin.diagram
+package com.github.mrdolch.plantarchintellijplugin.diagram.view
 
 import com.charleskorn.kaml.Yaml
-import com.github.mrdolch.plantarchintellijplugin.app.PANEL_KEY
+import com.github.mrdolch.plantarchintellijplugin.app.EditorRegistry
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFileManager
 import tech.dolch.plantarch.cmd.IdeaRenderJob
@@ -13,7 +14,7 @@ const val MARKER_STARTCONFIG = "@startIdeaRenderJob"
 const val MARKER_ENDCONFIG = "@endIdeaRenderJob"
 
 object DiagramView {
-  fun processDiagramViewUpdate(job: IdeaRenderJob, rawPlantuml: String) {
+  fun processDiagramViewUpdate(project: Project, job: IdeaRenderJob, rawPlantuml: String) {
 
     updateJobsOptionPanelState(job, rawPlantuml)
 
@@ -35,18 +36,20 @@ object DiagramView {
     val jobYaml = Yaml.default.encodeToString(IdeaRenderJob.serializer(), job)
     plantuml += "\n$MARKER_STARTCONFIG\n$jobYaml\n$MARKER_ENDCONFIG"
 
-    ApplicationManager.getApplication().invokeLater {
-      val project = getProjectByName(job.projectName)
-      // update Plugins-Panel
-      project.getUserData(PANEL_KEY)!!.updatePanel(job)
-      // Write and open Editor
-      val virtualFile = VirtualFileManager.getInstance()
-        .refreshAndFindFileByUrl("file://${job.optionPanelState.targetPumlFile}")
-      if (virtualFile != null) {
-        ApplicationManager.getApplication().runWriteAction {
-          VfsUtil.saveText(virtualFile, plantuml)
-        }
-        FileEditorManager.getInstance(project).openFile(virtualFile)
+    // update Plugins-Panel
+    openDiagramEditor(project, plantuml, job.optionPanelState.targetPumlFile)
+  }
+
+  private fun openDiagramEditor(project: Project, plantuml: String, diagramFile: String) {
+    val application = ApplicationManager.getApplication()
+    val virtualFileManager = VirtualFileManager.getInstance()
+    val fileEditorManager = FileEditorManager.getInstance(project)
+    application.invokeLater {
+      virtualFileManager.refreshAndFindFileByUrl("file://$diagramFile")?.let {
+        application.runWriteAction { VfsUtil.saveText(it, plantuml) }
+        fileEditorManager.openFile(it, true, true)
+        EditorRegistry.getEditor(it)!!
+          .updateFields(plantuml)
       }
     }
   }
@@ -89,3 +92,4 @@ object DiagramView {
       .sorted().distinct().toList()
   }
 }
+

@@ -14,12 +14,7 @@
                 text="Render PlantArch Diagram"/>
     </actions>
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow id="PlantArch" anchor="bottom"
-                    factoryClass="com.github.mrdolch.plantarchintellijplugin.app.PlantArchToolWindowFactory"/>
+        <fileEditorProvider
+                implementation="com.github.mrdolch.plantarchintellijplugin.diagram.view.DiagramEditorProvider"/>
     </extensions>
-
-    <extensions defaultExtensionNs="com.intellij">
-        <postStartupActivity implementation="com.github.mrdolch.plantarchintellijplugin.app.StartupListener"/>
-    </extensions>
-
 </idea-plugin>

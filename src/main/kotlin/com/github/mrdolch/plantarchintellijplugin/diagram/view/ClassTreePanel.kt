@@ -1,39 +1,23 @@
-package com.github.mrdolch.plantarchintellijplugin.panel
+package com.github.mrdolch.plantarchintellijplugin.diagram.view
 
-import com.github.mrdolch.plantarchintellijplugin.diagram.ExecPlantArch
-import com.github.mrdolch.plantarchintellijplugin.diagram.createIdeaRenderJob
-import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.module.ModuleUtil
-import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.openapi.vfs.findPsiFile
-import com.intellij.psi.PsiClassOwner
 import com.intellij.ui.components.JBList
 import com.intellij.ui.table.TableView
 import com.intellij.util.ui.ColumnInfo
 import com.intellij.util.ui.ListTableModel
-import tech.dolch.plantarch.ClassDiagram
 import tech.dolch.plantarch.cmd.IdeaRenderJob
-import tech.dolch.plantarch.cmd.ShowPackages
-import java.awt.BorderLayout
 import java.awt.Component
 import java.awt.GridLayout
 import javax.swing.*
 import javax.swing.border.TitledBorder
 
-class PanelDiagramOptions : JPanel(BorderLayout()) {
+class ClassTreePanel(jobParams: IdeaRenderJob, val onChange: () -> Unit) : JPanel() {
 
   private val containersBox = JBList<String>()
-  private val umlOptionsPanel = UmlOptionsPanel { this.updateDiagram() }
-  private var jobParams: IdeaRenderJob? = null
   val classesTable: ListTableModel<ClassEntry>
 
 
   init {
-    layout = GridLayout(1, 4)
-
-    add(JScrollPane(umlOptionsPanel).apply { border = TitledBorder("Optionen") })
-    umlOptionsPanel.showMethodNamesDropdown.addItemListener { updateDiagram() }
+    layout = GridLayout(2, 1)
 
     classesTable = ListTableModel<ClassEntry>(
       object : ColumnInfo<ClassEntry, String>("Klasse") {
@@ -46,7 +30,7 @@ class PanelDiagramOptions : JPanel(BorderLayout()) {
         override fun isCellEditable(item: ClassEntry) = true
         override fun setValue(item: ClassEntry, value: Boolean) {
           item.isAnalyzed = value
-          updateDiagram()
+          onChange()
         }
       },
       object : ColumnInfo<ClassEntry, Boolean>("Sichtbar") {
@@ -55,7 +39,7 @@ class PanelDiagramOptions : JPanel(BorderLayout()) {
         override fun isCellEditable(item: ClassEntry) = true
         override fun setValue(item: ClassEntry, value: Boolean) {
           item.isVisible = value
-          updateDiagram()
+          onChange()
         }
       }
     )
@@ -72,6 +56,7 @@ class PanelDiagramOptions : JPanel(BorderLayout()) {
     }
     add(JScrollPane(table).apply { border = TitledBorder("gefundene Klassen") })
     addList(containersBox)
+    updatePanel(jobParams)
   }
 
   private fun addList(jbList: JBList<String>) {
@@ -104,45 +89,11 @@ class PanelDiagramOptions : JPanel(BorderLayout()) {
         } else {
           super.addSelectionInterval(index0, index1)
         }
-        if (jobParams != null) {
-          updateDiagram()
-        }
+        onChange()
       }
     })
 
   }
-
-  fun createOptionsFromFile(file: VirtualFile, project: Project) {
-    ApplicationManager.getApplication().executeOnPooledThread {
-      ApplicationManager.getApplication().runReadAction {
-        val psiClassOwner = file.findPsiFile(project) as? PsiClassOwner
-        val className = psiClassOwner?.classes?.firstOrNull()?.qualifiedName
-        if (className != null) {
-          val module = ModuleUtil.findModuleForPsiElement(psiClassOwner)
-          val ideaRenderJob = createIdeaRenderJob(module!!, className)
-          updatePanel(ideaRenderJob)
-        }
-      }
-    }
-  }
-
-  fun updateDiagram() {
-    if (jobParams == null) return
-    jobParams!!.renderJob.classDiagrams.let {
-      it.classesToAnalyze = classesTable.items.filter { c -> c.isAnalyzed }.map { c -> c.name }
-      it.containersToHide = (0 until containersBox.model.size)
-        .map { i -> containersBox.model.getElementAt(i) }
-        .minus(containersBox.selectedValuesList.toSet())
-      it.classesToHide = classesTable.items.filter { c -> !c.isVisible }.map { c -> c.name }
-      it.showUseByMethodNames = umlOptionsPanel.showMethodNamesDropdown.selectedItem as ClassDiagram.UseByMethodNames
-      it.title = umlOptionsPanel.titleField.text
-      it.description = umlOptionsPanel.descriptionArea.text
-    }
-    jobParams!!.optionPanelState.showPackages = umlOptionsPanel.showPackagesDropdown.selectedItem as ShowPackages
-
-    ExecPlantArch.runAnalyzerBackgroundTask(jobParams!!, false)
-  }
-
 
   private fun setItems(jbList: JBList<String>, items: List<String>, selectedItems: List<String>) {
     val selectedIndices = items.withIndex()
@@ -154,7 +105,6 @@ class PanelDiagramOptions : JPanel(BorderLayout()) {
   }
 
   fun updatePanel(jobParams: IdeaRenderJob) {
-    this.jobParams = jobParams
     classesTable.items = jobParams.optionPanelState.classesInFocus
       .map {
         ClassEntry(
@@ -169,20 +119,8 @@ class PanelDiagramOptions : JPanel(BorderLayout()) {
       jobParams.optionPanelState.hiddenContainers,
       jobParams.optionPanelState.hiddenContainers - jobParams.optionPanelState.hiddenContainersSelected.toSet()
     )
-    umlOptionsPanel.titleField.text = jobParams.renderJob.classDiagrams.title
-    umlOptionsPanel.descriptionArea.text = jobParams.renderJob.classDiagrams.description
-    umlOptionsPanel.showMethodNamesDropdown.let {
-      it.itemListeners.forEach { listener -> it.removeItemListener(listener) }
-      it.selectedItem = jobParams.renderJob.classDiagrams.showUseByMethodNames
-      it.addItemListener { updateDiagram() }
-    }
-    umlOptionsPanel.showPackagesDropdown.let {
-      it.itemListeners.forEach { listener -> it.removeItemListener(listener) }
-      it.selectedItem = jobParams.optionPanelState.showPackages
-      it.addItemListener { updateDiagram() }
-    }
-    umlOptionsPanel.projectNameField.text = jobParams.projectName
   }
+
 
   fun toggleEntryFromDiagram(text: String) {
     var hasChanged = false
@@ -201,9 +139,14 @@ class PanelDiagramOptions : JPanel(BorderLayout()) {
         else selection.add(i)
         containersBox.selectedIndices = selection.sorted().toIntArray()
         hasChanged = true
-
       }
-
-    if (hasChanged) updateDiagram()
+    if (hasChanged) onChange()
   }
+
+  fun getClassesToAnalyze() = classesTable.items.filter { c -> c.isAnalyzed }.map { c -> c.name }
+  fun getContainersToHide() = (0 until containersBox.model.size)
+    .map { i -> containersBox.model.getElementAt(i) }
+    .minus(containersBox.selectedValuesList.toSet())
+
+  fun getClassesToHide() = classesTable.items.filter { c -> !c.isVisible }.map { c -> c.name }
 }

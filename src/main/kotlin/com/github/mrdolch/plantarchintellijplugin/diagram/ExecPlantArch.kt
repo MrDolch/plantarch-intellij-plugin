@@ -1,6 +1,7 @@
 package com.github.mrdolch.plantarchintellijplugin.diagram
 
-import com.github.mrdolch.plantarchintellijplugin.app.FILE_PREFIX_DEPENDENCY_DIAGRAM
+import com.github.mrdolch.plantarchintellijplugin.diagram.ExecPlantArch.FILE_PREFIX_DEPENDENCY_DIAGRAM
+import com.github.mrdolch.plantarchintellijplugin.diagram.view.DiagramView
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.CapturingProcessAdapter
 import com.intellij.execution.process.OSProcessHandler
@@ -45,6 +46,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.io.path.absolutePathString
 
 object ExecPlantArch {
+  const val FILE_PREFIX_DEPENDENCY_DIAGRAM = "dependency-diagram-"
 
   object TaskLock {
     val isRunning = AtomicBoolean(false)
@@ -81,7 +83,7 @@ object ExecPlantArch {
             indicator.text = "Updating UI..."
             ApplicationManager.getApplication().invokeLater {
               // Update your UI here
-              DiagramView.processDiagramViewUpdate(job, rawPlantUml)
+              DiagramView.processDiagramViewUpdate(project, job, rawPlantUml)
             }
           } finally {
             TaskLock.isRunning.set(false) // Task wieder freigeben
