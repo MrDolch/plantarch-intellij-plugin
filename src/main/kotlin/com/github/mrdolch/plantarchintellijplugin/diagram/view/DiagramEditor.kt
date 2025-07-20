@@ -57,9 +57,13 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
     classTreePanel.updatePanel(jobParams)
   }
 
+  fun toggleEntryFromDiagram(selectedText: String) {
+    classTreePanel.toggleEntryFromDiagram(selectedText)
+  }
+
   override fun getComponent(): JComponent = panel
   override fun getPreferredFocusedComponent(): JComponent? = null
-  override fun getName(): String = "Diagram Editor"
+  override fun getName(): String = "PlantArch Editor"
   override fun setState(state: FileEditorState) {}
   override fun isModified(): Boolean = false
   override fun isValid(): Boolean = true
@@ -68,3 +72,4 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
   override fun dispose() {}
   override fun getFile(): VirtualFile = diagramFile
 }
+
