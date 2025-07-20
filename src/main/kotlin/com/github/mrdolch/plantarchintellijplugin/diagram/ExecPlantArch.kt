@@ -211,7 +211,7 @@ fun createIdeaRenderJob(
 fun Module.getClasspath(): ImmutableSet<String> {
   val plugin = PluginManagerCore.getPlugin(PluginId.getId("com.github.mrdolch.plantarchintellijplugin"))
   val pluginPath = plugin?.pluginPath?.toFile()
-  val jarPath = pluginPath?.resolve("lib/plantarch-0.1.13-SNAPSHOT-launcher.jar")?.canonicalPath
+  val jarPath = pluginPath?.resolve("lib/plantarch-0.1.13-launcher.jar")?.canonicalPath
   val classpath = mutableSetOf(jarPath!!)
 
   // 2. Abhängigkeiten (Libraries, andere Module)
