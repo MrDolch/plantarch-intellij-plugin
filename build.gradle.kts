@@ -39,7 +39,8 @@ dependencies {
 
   implementation("io.github.mrdolch:plantarch:0.1.13") { artifact { classifier = "launcher" } }
   implementation("com.charleskorn.kaml:kaml:0.83.0")
-
+  implementation("net.sourceforge.plantuml:plantuml:1.2024.4")
+  
   // IntelliJ Platform Gradle Plugin Dependencies Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html
   intellijPlatform {
     create(providers.gradleProperty("platformType"), providers.gradleProperty("platformVersion"))

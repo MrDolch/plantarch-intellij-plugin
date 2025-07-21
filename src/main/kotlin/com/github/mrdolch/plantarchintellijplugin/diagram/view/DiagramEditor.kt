@@ -12,6 +12,9 @@ import java.awt.BorderLayout
 import java.beans.PropertyChangeListener
 import javax.swing.JComponent
 import javax.swing.JPanel
+import javax.swing.ScrollPaneConstants
+import javax.swing.border.TitledBorder
+
 
 class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase(), FileEditor {
 
@@ -19,6 +22,7 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
   private var jobParams: IdeaRenderJob
   private val umlOptionsPanel: UmlOptionsPanel
   private val classTreePanel: ClassTreePanel
+  private val pngViewerPanel = PngViewerPanel(diagramFile)
 
   init {
     EditorRegistry.registerEditor(diagramFile, this)
@@ -27,8 +31,17 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
 
     umlOptionsPanel = UmlOptionsPanel(jobParams) { updateDiagram() }
     classTreePanel = ClassTreePanel(jobParams) { updateDiagram() }
-    panel.add(umlOptionsPanel, BorderLayout.NORTH)
-    panel.add(classTreePanel, BorderLayout.CENTER)
+    val optionsPanel = JPanel(BorderLayout())
+    optionsPanel.add(umlOptionsPanel, BorderLayout.NORTH)
+    optionsPanel.add(classTreePanel, BorderLayout.CENTER)
+    panel.add(DragScrollPane(optionsPanel).apply {
+      horizontalScrollBarPolicy = ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
+    }, BorderLayout.WEST)
+    panel.add(DragScrollPane(pngViewerPanel).apply {
+      border = TitledBorder("Dependency Diagram")
+      verticalScrollBar.unitIncrement = 16
+      horizontalScrollBar.unitIncrement = 16
+    }, BorderLayout.CENTER)
   }
 
   private fun getJobParams(diagramContent: String): IdeaRenderJob {
@@ -51,10 +64,11 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
     ExecPlantArch.runAnalyzerBackgroundTask(jobParams, false)
   }
 
-  fun updateFields(diagramContent: String) {
+  fun updateFields(diagramFile: VirtualFile, diagramContent: String) {
     jobParams = getJobParams(diagramContent)
     umlOptionsPanel.updateFields(jobParams)
     classTreePanel.updatePanel(jobParams)
+    pngViewerPanel.updatePanel(diagramFile)
   }
 
   fun toggleEntryFromDiagram(selectedText: String) {
@@ -72,4 +86,5 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
   override fun dispose() {}
   override fun getFile(): VirtualFile = diagramFile
 }
+
 

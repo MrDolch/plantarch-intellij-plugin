@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+## [0.1.7] - 2025-07-21
+
+- Render PNGs ourselves
+- Remove dependency to PlantUml Plugin
+
+## [0.1.6] - 2025-07-20
+
+- Show Options panel on each diagram
+- Remove global Options panel
+
 ## [0.1.5] - 2025-06-27
 
 - Fix temp-path-problem on Windows
