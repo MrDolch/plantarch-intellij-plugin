@@ -6,6 +6,7 @@ skinparam monochrome false
 
 * <color:red> ☐ Bugs
 ** ☐ NPE bei geänderten Klassennamen oder -package
+** ☐ ignores package names with Uppercase
 
 * <color:blue> ☐ ToDos
 ** ☐ Renderer wiederverwenden
@@ -16,12 +17,15 @@ skinparam monochrome false
 ** ☐ Default-Options-Panel
 ** ☐ Weitere Optionen
 *** ☐ Tree für Klassen-Selektion
+*** ☐ Default-Block in Diagram
 *** ☐ auto render
 *** ☐ auto compile
 *** ☐ show containers
-*** ☐ MArker interfaces
-*** ☐ Colors for MArker interfaces
+*** ☐ Marker interfaces
+*** ☐ Colors for Marker interfaces
 ** ☐ selber Rendern statt via PlantUml-Plugin
+*** ☐ Copy to Clipboard
+*** ☐ Maximal Breite erweitern
 
 
 * <color:green> ☑ Features\n <color:green> implemented
