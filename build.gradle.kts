@@ -1,6 +1,5 @@
 import org.jetbrains.changelog.Changelog
 import org.jetbrains.changelog.markdownToHTML
-import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 
 plugins {
   id("java") // Java support
@@ -34,13 +33,15 @@ repositories {
 
 // Dependencies are managed with Gradle version catalog - read more: https://docs.gradle.org/current/userguide/platforms.html#sub:version-catalog
 dependencies {
-  testImplementation(libs.junit)
-  testImplementation(libs.opentest4j)
+  // Kotest Core
+  testImplementation("io.kotest:kotest-runner-junit5:5.9.0")
+  testImplementation("io.kotest:kotest-assertions-core:5.9.0")
+  testImplementation("io.kotest:kotest-framework-datatest:5.9.0")
 
   implementation("io.github.mrdolch:plantarch:0.1.13") { artifact { classifier = "launcher" } }
   implementation("com.charleskorn.kaml:kaml:0.92.0")
   implementation("net.sourceforge.plantuml:plantuml:1.2025.4")
-  
+
   // IntelliJ Platform Gradle Plugin Dependencies Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html
   intellijPlatform {
     create(providers.gradleProperty("platformType"), providers.gradleProperty("platformVersion"))
@@ -51,8 +52,13 @@ dependencies {
     // Plugin Dependencies. Uses `platformPlugins` property from the gradle.properties file for plugin from JetBrains Marketplace.
     plugins(providers.gradleProperty("platformPlugins").map { it.split(',') })
 
-    testFramework(TestFrameworkType.Platform)
+//    testFramework(TestFrameworkType.JUnit5)
+    testRuntimeOnly("junit:junit:4.13.2")
   }
+}
+
+tasks.test {
+  useJUnitPlatform()
 }
 
 // Configure IntelliJ Platform Gradle Plugin - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-extension.html

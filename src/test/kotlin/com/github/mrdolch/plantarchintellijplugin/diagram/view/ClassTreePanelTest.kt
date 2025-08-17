@@ -1,9 +1,67 @@
 package com.github.mrdolch.plantarchintellijplugin.diagram.view
 
 import com.charleskorn.kaml.Yaml
+import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.collections.shouldContainExactly
+import io.kotest.matchers.shouldBe
 import tech.dolch.plantarch.cmd.IdeaRenderJob
+import tech.dolch.plantarch.cmd.OptionPanelState
+import tech.dolch.plantarch.cmd.RenderJob
+import tech.dolch.plantarch.cmd.ShowPackages
 import java.awt.event.KeyEvent
 import javax.swing.*
+
+class ClassTreePanelTest : StringSpec({
+
+  fun sampleJob(): IdeaRenderJob {
+    return IdeaRenderJob(
+      optionPanelState = OptionPanelState(
+        classesInFocus = listOf("com.acme.Foo", "com.acme.Bar", "com.acme.Hidden"),
+        classesInFocusSelected = listOf("com.acme.Foo"),
+        hiddenClassesSelected = listOf("com.acme.Hidden"),
+        hiddenContainers = listOf("ExtLib"),
+        targetPumlFile = "n/a",
+        showPackages = ShowPackages.NONE,
+        hiddenContainersSelected = emptyList(),
+        hiddenClasses = emptyList(),
+      ),
+      projectName = "Test",
+      moduleName = "test",
+      classPaths = emptySet(),
+      renderJob = RenderJob(
+        RenderJob.ClassDiagramParams(
+          projectDir = "n/a",
+        )
+      )
+    )
+  }
+
+  "should build tree with given entries" {
+    val panel = ClassTreePanel(sampleJob()) {}
+    panel.containerEntries.map { it.name } shouldContainExactly listOf("Source Classes", "ExtLib")
+    panel.getClassesToAnalyze() shouldContainExactly listOf("com.acme.Foo")
+  }
+
+  "toggleEntryFromDiagram should change visibility" {
+    var changed = false
+    val panel = ClassTreePanel(sampleJob()) { changed = true }
+
+    panel.toggleEntryFromDiagram("Bar")
+
+    val bar = panel.containerEntries
+      .flatMap { it.packages }
+      .flatMap { it.classes }
+      .first { it.name.endsWith(".Bar") }
+
+    bar.visibility shouldBe VisibilityStatus.IN_FOCUS
+    changed shouldBe true
+  }
+
+  "getClassesToHide should return hidden ones" {
+    val panel = ClassTreePanel(sampleJob()) {}
+    panel.getClassesToHide() shouldContainExactly listOf("com.acme.Hidden")
+  }
+})
 
 fun main() {
   SwingUtilities.invokeLater {
