@@ -1,6 +1,5 @@
 import org.jetbrains.changelog.Changelog
 import org.jetbrains.changelog.markdownToHTML
-import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 
 plugins {
   id("java") // Java support
@@ -42,7 +41,7 @@ dependencies {
   implementation("io.github.mrdolch:plantarch:0.1.13") { artifact { classifier = "launcher" } }
   implementation("com.charleskorn.kaml:kaml:0.92.0")
   implementation("net.sourceforge.plantuml:plantuml:1.2025.4")
-  
+
   // IntelliJ Platform Gradle Plugin Dependencies Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html
   intellijPlatform {
     create(providers.gradleProperty("platformType"), providers.gradleProperty("platformVersion"))
@@ -53,8 +52,13 @@ dependencies {
     // Plugin Dependencies. Uses `platformPlugins` property from the gradle.properties file for plugin from JetBrains Marketplace.
     plugins(providers.gradleProperty("platformPlugins").map { it.split(',') })
 
-    testFramework(TestFrameworkType.JUnit5)
+//    testFramework(TestFrameworkType.JUnit5)
+    testRuntimeOnly("junit:junit:4.13.2")
   }
+}
+
+tasks.test {
+  useJUnitPlatform()
 }
 
 // Configure IntelliJ Platform Gradle Plugin - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-extension.html
@@ -170,8 +174,4 @@ sonarqube {
     property("sonar.projectKey", "mrdolch:MrDolch_plantarch-intellij-plugin")
     property("sonar.branch.name", "main") // Setze hier den Branch-Namen
   }
-}
-
-tasks.test {
-  useJUnitPlatform()
 }
