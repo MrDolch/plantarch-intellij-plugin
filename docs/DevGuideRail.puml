@@ -11,20 +11,18 @@ skinparam monochrome false
 * <color:blue> ☐ ToDos
 ** ☐ Renderer wiederverwenden
 ** ☐ Tests
-** ☐ ToolWindow mit Diagramm
 ** ☐ Publish nach MavenLocal
 ** ☐ Publish nach Intellij Market
 ** ☐ Default-Options-Panel
 ** ☐ Weitere Optionen
-*** ☐ Tree für Klassen-Selektion
 *** ☐ Default-Block in Diagram
 *** ☐ auto render
 *** ☐ auto compile
 *** ☐ show containers
 *** ☐ Marker interfaces
 *** ☐ Colors for Marker interfaces
-** ☐ selber Rendern statt via PlantUml-Plugin
-*** ☐ Copy to Clipboard
+** ☑ selber Rendern statt via PlantUml-Plugin
+*** ☑ Copy to Clipboard
 *** ☐ Maximal Breite erweitern
 
 
@@ -38,5 +36,8 @@ skinparam monochrome false
 ** ☑ Alle Parameter ins Params-Objekt
 ** ☑ workingDirs for Multimoduleprojekte
 ** ☑ Class<<data>> in gefundene Klassen
+** ☑ ToolWindow mit Diagramm
+** ☑ Weitere Optionen
+*** ☑ Tree für Klassen-Selektion
 
 @endmindmap

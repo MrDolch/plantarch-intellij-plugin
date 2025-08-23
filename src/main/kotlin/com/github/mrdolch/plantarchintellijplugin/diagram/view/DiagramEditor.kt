@@ -7,6 +7,7 @@ import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorState
 import com.intellij.openapi.util.UserDataHolderBase
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.vfs.readText
 import tech.dolch.plantarch.cmd.IdeaRenderJob
 import java.awt.BorderLayout
 import java.beans.PropertyChangeListener
@@ -22,7 +23,7 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
   private var jobParams: IdeaRenderJob
   private val umlOptionsPanel: UmlOptionsPanel
   private val classTreePanel: ClassTreePanel
-  private val pngViewerPanel = PngViewerPanel(diagramFile)
+  private val pngViewerPanel = PngViewerPanel(diagramFile.readText())
 
   init {
     EditorRegistry.registerEditor(diagramFile, this)
@@ -64,11 +65,11 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
     ExecPlantArch.runAnalyzerBackgroundTask(jobParams, false)
   }
 
-  fun updateFields(diagramFile: VirtualFile, diagramContent: String) {
+  fun updateFields(diagramContent: String) {
     jobParams = getJobParams(diagramContent)
     umlOptionsPanel.updateFields(jobParams)
     classTreePanel.updatePanel(jobParams)
-    pngViewerPanel.updatePanel(diagramFile)
+    pngViewerPanel.updatePanel(diagramContent)
   }
 
   fun toggleEntryFromDiagram(selectedText: String) {

@@ -48,8 +48,8 @@ object DiagramView {
       virtualFileManager.refreshAndFindFileByUrl("file://$diagramFile")?.let {
         application.runWriteAction { VfsUtil.saveText(it, plantuml) }
         fileEditorManager.openFile(it, true, true)
-        EditorRegistry.getEditor(it)!!
-          .updateFields(it, plantuml)
+        EditorRegistry.getEditor(it)
+          ?.updateFields(plantuml)
       }
     }
   }
