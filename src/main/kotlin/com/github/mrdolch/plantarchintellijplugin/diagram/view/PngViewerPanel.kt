@@ -6,9 +6,7 @@ import net.sourceforge.plantuml.FileFormatOption
 import net.sourceforge.plantuml.SourceStringReader
 import java.awt.*
 import java.awt.datatransfer.DataFlavor
-import java.awt.datatransfer.StringSelection
 import java.awt.datatransfer.Transferable
-import java.awt.datatransfer.UnsupportedFlavorException
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import java.awt.event.MouseMotionAdapter
@@ -72,7 +70,7 @@ class PngViewerPanel(puml: String, val onChange: (String) -> Unit) : JPanel() {
       })
       add(JMenuItem("Copy SVG XML").apply {
         addActionListener {
-          CopyPasteManager.getInstance().setContents(StringSelection(svg))
+          CopyPasteManager.copyTextToClipboard(svg)
         }
       })
       add(JMenuItem("Copy PNG Image").apply {
@@ -87,26 +85,17 @@ class PngViewerPanel(puml: String, val onChange: (String) -> Unit) : JPanel() {
 
 private class ImageTransferable(val image: Image) : Transferable {
   override fun getTransferDataFlavors() = arrayOf(DataFlavor.imageFlavor)
-  override fun isDataFlavorSupported(flavor: DataFlavor) = flavor == DataFlavor.imageFlavor
-  override fun getTransferData(flavor: DataFlavor) = image
+  override fun isDataFlavorSupported(flavor: DataFlavor) = getTransferDataFlavors().contains(flavor)
+  override fun getTransferData(flavor: DataFlavor) = if (isDataFlavorSupported(flavor)) image else ""
 }
 
 private class SvgTransferable(private val svg: String) : Transferable {
-  private val svgStringFlavor = DataFlavor("image/svg+xml; class=java.lang.String", "SVG (string)")
-  private val svgStreamFlavor = DataFlavor("image/svg+xml; class=java.io.InputStream", "SVG (stream)")
-  private val textFlavor = DataFlavor.stringFlavor
+  override fun getTransferDataFlavors(): Array<DataFlavor> = arrayOf(
+    DataFlavor("image/svg+xml; class=java.io.InputStream", "SVG (stream)")
+  )
 
-  override fun getTransferDataFlavors(): Array<DataFlavor> =
-    arrayOf(svgStringFlavor, svgStreamFlavor, textFlavor)
-
-  override fun isDataFlavorSupported(flavor: DataFlavor): Boolean =
-    flavor == svgStringFlavor || flavor == svgStreamFlavor || flavor == textFlavor
-
-  override fun getTransferData(flavor: DataFlavor): Any =
-    when (flavor) {
-      svgStringFlavor -> svg
-      svgStreamFlavor -> ByteArrayInputStream(svg.toByteArray(StandardCharsets.UTF_8))
-      textFlavor -> svg
-      else -> throw UnsupportedFlavorException(flavor)
-    }
+  override fun isDataFlavorSupported(flavor: DataFlavor) = getTransferDataFlavors().contains(flavor)
+  override fun getTransferData(flavor: DataFlavor) =
+    if (isDataFlavorSupported(flavor)) ByteArrayInputStream(svg.toByteArray(StandardCharsets.UTF_8))
+    else ""
 }
