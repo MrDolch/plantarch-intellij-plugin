@@ -2,10 +2,12 @@ package com.github.mrdolch.plantarchintellijplugin.diagram.view
 
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldNotContain
 
 class PngViewerPanelTest : StringSpec({
   val testee = PngViewerPanel(
     """@startuml
+
 
 class com.github.mrdolch.plantarchintellijplugin.diagram.view.DiagramEditor #ccc
 class com.github.mrdolch.plantarchintellijplugin.diagram.view.PngViewerPanel
@@ -37,12 +39,14 @@ caption
 endcaption
 
 skinparam linetype polyline
+!pragma layout smetana
 
 @enduml"""
   ) {}
 
   "should build panel based on puml" {
 
+    testee.svg shouldNotContain "Dot executable does not exist"
     testee.svg shouldContain "PngViewerPanelKt"
   }
 
