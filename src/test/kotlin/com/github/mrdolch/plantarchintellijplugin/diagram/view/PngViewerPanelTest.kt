@@ -39,7 +39,7 @@ endcaption
 skinparam linetype polyline
 
 @enduml"""
-  )
+  ) {}
 
   "should build panel based on puml" {
 

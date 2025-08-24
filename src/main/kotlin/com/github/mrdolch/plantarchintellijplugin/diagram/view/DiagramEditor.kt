@@ -23,7 +23,9 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
   private var jobParams: IdeaRenderJob
   private val umlOptionsPanel: UmlOptionsPanel
   private val classTreePanel: ClassTreePanel
-  private val pngViewerPanel = PngViewerPanel(diagramFile.readText())
+  private val pngViewerPanel = PngViewerPanel(diagramFile.readText()) {
+    toggleEntryFromDiagram(it)
+  }
 
   init {
     EditorRegistry.registerEditor(diagramFile, this)

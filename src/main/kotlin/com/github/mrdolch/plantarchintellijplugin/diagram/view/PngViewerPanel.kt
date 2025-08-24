@@ -4,31 +4,50 @@ import com.intellij.openapi.ide.CopyPasteManager
 import net.sourceforge.plantuml.FileFormat
 import net.sourceforge.plantuml.FileFormatOption
 import net.sourceforge.plantuml.SourceStringReader
-import java.awt.Dimension
-import java.awt.Graphics
-import java.awt.Image
+import java.awt.*
 import java.awt.datatransfer.DataFlavor
+import java.awt.datatransfer.StringSelection
 import java.awt.datatransfer.Transferable
+import java.awt.datatransfer.UnsupportedFlavorException
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
+import java.awt.event.MouseMotionAdapter
 import java.awt.image.BufferedImage
+import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.nio.charset.StandardCharsets
 import javax.imageio.ImageIO
 import javax.swing.JMenuItem
 import javax.swing.JPanel
 import javax.swing.JPopupMenu
 
-class PngViewerPanel(puml: String) : JPanel() {
-  private var image: BufferedImage = renderPng(puml)
-  var svg: String = renderSvg(puml)
+class PngViewerPanel(puml: String, val onChange: (String) -> Unit) : JPanel() {
+  private lateinit var image: BufferedImage
+  lateinit var svg: String
+  private lateinit var classNameBounds: Map<String, Rectangle>
 
   init {
-    preferredSize = Dimension(image.width, image.height)
-    installPopupMenu(this) { image }
+    updatePanel(puml)
+    installPopupMenu(this)
+    addMouseMotionListener(object : MouseMotionAdapter() {
+      override fun mouseMoved(e: MouseEvent) {
+        val overClass = classNameBounds.values.any { it.contains(e.point) }
+        cursor = if (overClass) Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) else Cursor.getDefaultCursor()
+      }
+    })
+    addMouseListener(object : MouseAdapter() {
+      override fun mouseClicked(e: MouseEvent) {
+        classNameBounds.filter { it.value.contains(e.point) }
+          .forEach { onChange(it.key) }
+      }
+    })
   }
 
   fun updatePanel(puml: String) {
     image = renderPng(puml)
     svg = renderSvg(puml)
     preferredSize = Dimension(image.width, image.height)
+    classNameBounds = collectSvgTexts(svg).associate { it.asEntry() }
   }
 
   fun renderPng(puml: String): BufferedImage = ImageIO.read(renderDiagram(puml, FileFormat.PNG).inputStream())
@@ -43,24 +62,51 @@ class PngViewerPanel(puml: String) : JPanel() {
     super.paintComponent(g)
     g.drawImage(image, 0, 0, this)
   }
-}
 
-fun installPopupMenu(diagramPanel: JPanel, getImage: () -> Image) {
-  val popup = JPopupMenu().apply {
-    add(JMenuItem("Copy to Clipboard").apply {
-      addActionListener {
-        val image = getImage()
-        val transferable = ImageTransferable(image)
-        CopyPasteManager.getInstance().setContents(transferable)
-      }
-    })
+  fun installPopupMenu(diagramPanel: JPanel) {
+    val popup = JPopupMenu().apply {
+      add(JMenuItem("Copy SVG Image").apply {
+        addActionListener {
+          CopyPasteManager.getInstance().setContents(SvgTransferable(svg))
+        }
+      })
+      add(JMenuItem("Copy SVG XML").apply {
+        addActionListener {
+          CopyPasteManager.getInstance().setContents(StringSelection(svg))
+        }
+      })
+      add(JMenuItem("Copy PNG Image").apply {
+        addActionListener {
+          CopyPasteManager.getInstance().setContents(ImageTransferable(image))
+        }
+      })
+    }
+    diagramPanel.componentPopupMenu = popup
   }
-
-  diagramPanel.componentPopupMenu = popup
 }
 
 private class ImageTransferable(val image: Image) : Transferable {
   override fun getTransferDataFlavors() = arrayOf(DataFlavor.imageFlavor)
   override fun isDataFlavorSupported(flavor: DataFlavor) = flavor == DataFlavor.imageFlavor
   override fun getTransferData(flavor: DataFlavor) = image
+}
+
+private class SvgTransferable(private val svg: String) : Transferable {
+  private val svgStringFlavor = DataFlavor("image/svg+xml; class=java.lang.String", "SVG (string)")
+  private val svgStreamFlavor = DataFlavor("image/svg+xml; class=java.io.InputStream", "SVG (stream)")
+  private val textFlavor = DataFlavor.stringFlavor
+
+  override fun getTransferDataFlavors(): Array<DataFlavor> =
+    arrayOf(svgStringFlavor, svgStreamFlavor, textFlavor)
+
+  override fun isDataFlavorSupported(flavor: DataFlavor): Boolean =
+    flavor == svgStringFlavor || flavor == svgStreamFlavor || flavor == textFlavor
+
+  override fun getTransferData(flavor: DataFlavor): Any =
+    when (flavor) {
+      svgStringFlavor -> svg
+      svgStreamFlavor -> ByteArrayInputStream(svg.toByteArray(StandardCharsets.UTF_8))
+      textFlavor -> svg
+      else -> throw UnsupportedFlavorException(flavor)
+    }
 }

@@ -2,7 +2,7 @@
 skinparam monochrome false
 
 * <color:orange> ☐ Focus
-** ☐ I18n
+** ☐ SVG
 
 * <color:red> ☐ Bugs
 ** ☐ NPE bei geänderten Klassennamen oder -package
@@ -10,7 +10,7 @@ skinparam monochrome false
 
 * <color:blue> ☐ ToDos
 ** ☐ Renderer wiederverwenden
-** ☐ Tests
+** ☐ I18n
 ** ☐ Publish nach MavenLocal
 ** ☐ Publish nach Intellij Market
 ** ☐ Default-Options-Panel
@@ -37,6 +37,7 @@ skinparam monochrome false
 ** ☑ workingDirs for Multimoduleprojekte
 ** ☑ Class<<data>> in gefundene Klassen
 ** ☑ ToolWindow mit Diagramm
+** ☑ Tests
 ** ☑ Weitere Optionen
 *** ☑ Tree für Klassen-Selektion
 

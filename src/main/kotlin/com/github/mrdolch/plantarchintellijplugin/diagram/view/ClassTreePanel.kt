@@ -109,8 +109,20 @@ class ClassTreePanel(
 
 
   fun toggleEntryFromDiagram(text: String) {
-    val toToggle = containerEntries.flatMap { it.packages }.flatMap { it.classes }
-      .filter { it.name.endsWith(".$text") }
+    // toggle Containers
+    val visibleContainers = containerEntries.filter { it.visibility == VisibilityStatus.MAYBE }
+    visibleContainers.filter { it.name == text }
+      .forEach {
+        it.visibility = VisibilityStatus.HIDDEN
+        tree.invalidate()
+        tree.updateUI()
+        onChange()
+        return
+      }
+
+    // toggle Classes
+    val toToggle = visibleContainers.flatMap { it.packages }.flatMap { it.classes }
+      .filter { it.name.endsWith(".$text") || it.name == text }
     if (toToggle.isNotEmpty()) {
       toToggle.forEach {
         it.visibility =
