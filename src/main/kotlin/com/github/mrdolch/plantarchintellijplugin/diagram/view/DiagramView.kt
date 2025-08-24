@@ -30,8 +30,12 @@ object DiagramView {
         .replaceFirst("@startuml\n", "@startuml\nset namespaceSeparator ::")
     }
     if (job.optionPanelState.showPackages == ShowPackages.NONE) {
-      plantuml = plantuml.replace("\\b[a-z.]+\\.(?=[A-Z])".toRegex(), "")
+      plantuml = plantuml.replace("\\b(?:[a-z][a-zA-Z]*\\.)+(?=[A-Z])".toRegex(), "")
     }
+    val globalOptions = """
+      !pragma layout smetana
+    """.trimIndent()
+    plantuml = plantuml.replaceFirst("\n@enduml", "$globalOptions\n@enduml")
 
     val jobYaml = Yaml.default.encodeToString(IdeaRenderJob.serializer(), job)
     plantuml += "\n$MARKER_STARTCONFIG\n$jobYaml\n$MARKER_ENDCONFIG"
