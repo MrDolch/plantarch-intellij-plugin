@@ -35,7 +35,7 @@ object DiagramView {
     val globalOptions = """
       !pragma layout smetana
     """.trimIndent()
-    plantuml = plantuml.replaceFirst("\n@enduml", "$globalOptions\n@enduml")
+    plantuml = plantuml.replaceFirst("\n@enduml", "\n$globalOptions\n@enduml")
 
     val jobYaml = Yaml.default.encodeToString(IdeaRenderJob.serializer(), job)
     plantuml += "\n$MARKER_STARTCONFIG\n$jobYaml\n$MARKER_ENDCONFIG"
