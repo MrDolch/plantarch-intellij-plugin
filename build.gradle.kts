@@ -8,7 +8,7 @@ plugins {
   alias(libs.plugins.changelog) // Gradle Changelog Plugin
   alias(libs.plugins.qodana) // Gradle Qodana Plugin
   alias(libs.plugins.kover) // Gradle Kover Plugin
-  id("org.sonarqube") version "6.2.0.5505"
+  id("org.sonarqube") version "6.3.0.5676"
   id("checkstyle")
 }
 
