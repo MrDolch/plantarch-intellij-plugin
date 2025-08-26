@@ -23,15 +23,15 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
   private var jobParams: IdeaRenderJob
   private val umlOptionsPanel: UmlOptionsPanel
   private val classTreePanel: ClassTreePanel
-  private val pngViewerPanel = PngViewerPanel(diagramFile.readText()) {
-    toggleEntryFromDiagram(it)
-  }
+  private val pngViewerPanel: PngViewerPanel
 
   init {
     EditorRegistry.registerEditor(diagramFile, this)
     val diagramContent = String(diagramFile.contentsToByteArray())
     jobParams = getJobParams(diagramContent)
-
+    pngViewerPanel = PngViewerPanel(diagramFile.readText(), jobParams.optionPanelState) {
+      toggleEntryFromDiagram(it)
+    }
     umlOptionsPanel = UmlOptionsPanel(jobParams) { updateDiagram() }
     classTreePanel = ClassTreePanel(jobParams) { updateDiagram() }
     val optionsPanel = JPanel(BorderLayout())
@@ -71,7 +71,7 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
     jobParams = getJobParams(diagramContent)
     umlOptionsPanel.updateFields(jobParams)
     classTreePanel.updatePanel(jobParams)
-    pngViewerPanel.updatePanel(diagramContent)
+    pngViewerPanel.updatePanel(diagramContent, jobParams.optionPanelState)
   }
 
   fun toggleEntryFromDiagram(selectedText: String) {

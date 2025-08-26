@@ -4,6 +4,7 @@ import com.intellij.openapi.ide.CopyPasteManager
 import net.sourceforge.plantuml.FileFormat
 import net.sourceforge.plantuml.FileFormatOption
 import net.sourceforge.plantuml.SourceStringReader
+import tech.dolch.plantarch.cmd.OptionPanelState
 import java.awt.*
 import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.Transferable
@@ -18,14 +19,16 @@ import javax.imageio.ImageIO
 import javax.swing.JMenuItem
 import javax.swing.JPanel
 import javax.swing.JPopupMenu
+import kotlin.math.max
 
-class PngViewerPanel(puml: String, val onChange: (String) -> Unit) : JPanel() {
+class PngViewerPanel(puml: String, optionPanelState: OptionPanelState, val onChange: (String) -> Unit) : JPanel() {
   private lateinit var image: BufferedImage
   lateinit var svg: String
+  lateinit var puml: String
   private lateinit var classNameBounds: Map<String, Rectangle>
 
   init {
-    updatePanel(puml)
+    updatePanel(puml, optionPanelState)
     installPopupMenu(this)
     addMouseMotionListener(object : MouseMotionAdapter() {
       override fun mouseMoved(e: MouseEvent) {
@@ -41,11 +44,28 @@ class PngViewerPanel(puml: String, val onChange: (String) -> Unit) : JPanel() {
     })
   }
 
-  fun updatePanel(puml: String) {
-    image = renderPng(puml)
+  fun updatePanel(puml: String, optionPanelState: OptionPanelState) {
+    this.puml = puml.substring(puml.indexOf("@startuml\n"), puml.indexOf("@enduml\n") + 8)
     svg = renderSvg(puml)
+    setPlantumlLimitSize()
+    image = renderPng(puml)
     preferredSize = Dimension(image.width, image.height)
-    classNameBounds = collectSvgTexts(svg).associate { it.asEntry() }
+    classNameBounds = collectSvgTexts(svg)
+      .filter {
+        optionPanelState.hiddenClasses.any { c -> c.endsWith(it.text) }
+            || optionPanelState.hiddenContainers.contains(it.text)
+      }
+      .associate { it.asEntry() }
+  }
+
+  private fun setPlantumlLimitSize() {
+    val minWidth =
+      Regex("""<svg[^>]*\bwidth\s*=\s*["']\s*([0-9]+(?:\.[0-9]+)?)\s*(?:px)?["']""")
+        .find(svg)?.groupValues?.get(1)?.toInt() ?: 4096
+    val minHeight =
+      Regex("""<svg[^>]*\bheight\s*=\s*["']\s*([0-9]+(?:\.[0-9]+)?)\s*(?:px)?["']""")
+        .find(svg)?.groupValues?.get(1)?.toInt() ?: 4096
+    System.setProperty("PLANTUML_LIMIT_SIZE", (32 + max(minWidth, minHeight)).toString())
   }
 
   fun renderPng(puml: String): BufferedImage = ImageIO.read(renderDiagram(puml, FileFormat.PNG).inputStream())
@@ -63,20 +83,17 @@ class PngViewerPanel(puml: String, val onChange: (String) -> Unit) : JPanel() {
 
   fun installPopupMenu(diagramPanel: JPanel) {
     val popup = JPopupMenu().apply {
+      add(JMenuItem("Copy PNG Image").apply {
+        addActionListener { CopyPasteManager.getInstance().setContents(ImageTransferable(image)) }
+      })
+      add(JMenuItem("Copy PlantUml Source").apply {
+        addActionListener { CopyPasteManager.copyTextToClipboard(puml) }
+      })
       add(JMenuItem("Copy SVG Image").apply {
-        addActionListener {
-          CopyPasteManager.getInstance().setContents(SvgTransferable(svg))
-        }
+        addActionListener { CopyPasteManager.getInstance().setContents(SvgTransferable(svg)) }
       })
       add(JMenuItem("Copy SVG XML").apply {
-        addActionListener {
-          CopyPasteManager.copyTextToClipboard(svg)
-        }
-      })
-      add(JMenuItem("Copy PNG Image").apply {
-        addActionListener {
-          CopyPasteManager.getInstance().setContents(ImageTransferable(image))
-        }
+        addActionListener { CopyPasteManager.copyTextToClipboard(svg) }
       })
     }
     diagramPanel.componentPopupMenu = popup

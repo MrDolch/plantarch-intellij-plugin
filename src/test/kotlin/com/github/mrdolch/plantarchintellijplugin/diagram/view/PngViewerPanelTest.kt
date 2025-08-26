@@ -3,6 +3,8 @@ package com.github.mrdolch.plantarchintellijplugin.diagram.view
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
+import tech.dolch.plantarch.cmd.OptionPanelState
+import tech.dolch.plantarch.cmd.ShowPackages
 
 class PngViewerPanelTest : StringSpec({
   val testee = PngViewerPanel(
@@ -41,7 +43,17 @@ endcaption
 skinparam linetype polyline
 !pragma layout smetana
 
-@enduml"""
+@enduml""",
+    OptionPanelState(
+      "",
+      ShowPackages.NONE,
+      emptyList(),
+      emptyList(),
+      emptyList(),
+      emptyList(),
+      emptyList(),
+      emptyList()
+    )
   ) {}
 
   "should build panel based on puml" {
