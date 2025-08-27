@@ -16,7 +16,6 @@ import javax.swing.JPanel
 import javax.swing.ScrollPaneConstants
 import javax.swing.border.TitledBorder
 
-
 class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase(), FileEditor {
 
   private val panel = JPanel(BorderLayout())
@@ -29,27 +28,35 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
     EditorRegistry.registerEditor(diagramFile, this)
     val diagramContent = String(diagramFile.contentsToByteArray())
     jobParams = getJobParams(diagramContent)
-    pngViewerPanel = PngViewerPanel(diagramFile.readText(), jobParams.optionPanelState) {
-      toggleEntryFromDiagram(it)
-    }
+    pngViewerPanel =
+        PngViewerPanel(diagramFile.readText(), jobParams.optionPanelState) {
+          toggleEntryFromDiagram(it)
+        }
     umlOptionsPanel = UmlOptionsPanel(jobParams) { updateDiagram() }
     classTreePanel = ClassTreePanel(jobParams) { updateDiagram() }
     val optionsPanel = JPanel(BorderLayout())
     optionsPanel.add(umlOptionsPanel, BorderLayout.NORTH)
     optionsPanel.add(classTreePanel, BorderLayout.CENTER)
-    panel.add(DragScrollPane(optionsPanel).apply {
-      horizontalScrollBarPolicy = ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
-    }, BorderLayout.WEST)
-    panel.add(DragScrollPane(pngViewerPanel).apply {
-      border = TitledBorder("Dependency Diagram")
-      verticalScrollBar.unitIncrement = 16
-      horizontalScrollBar.unitIncrement = 16
-    }, BorderLayout.CENTER)
+    panel.add(
+        DragScrollPane(optionsPanel).apply {
+          horizontalScrollBarPolicy = ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
+        },
+        BorderLayout.WEST,
+    )
+    panel.add(
+        DragScrollPane(pngViewerPanel).apply {
+          border = TitledBorder("Dependency Diagram")
+          verticalScrollBar.unitIncrement = 16
+          horizontalScrollBar.unitIncrement = 16
+        },
+        BorderLayout.CENTER,
+    )
   }
 
   private fun getJobParams(diagramContent: String): IdeaRenderJob {
     val content = diagramContent.lines()
-    val configYaml = content.subList(content.indexOf(MARKER_STARTCONFIG) + 1, content.indexOf(MARKER_ENDCONFIG))
+    val configYaml =
+        content.subList(content.indexOf(MARKER_STARTCONFIG) + 1, content.indexOf(MARKER_ENDCONFIG))
     return Yaml.default.decodeFromString(IdeaRenderJob.serializer(), configYaml.joinToString("\n"))
   }
 
@@ -79,15 +86,22 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
   }
 
   override fun getComponent(): JComponent = panel
+
   override fun getPreferredFocusedComponent(): JComponent? = null
+
   override fun getName(): String = "PlantArch Editor"
+
   override fun setState(state: FileEditorState) {}
+
   override fun isModified(): Boolean = false
+
   override fun isValid(): Boolean = true
+
   override fun addPropertyChangeListener(p0: PropertyChangeListener) {}
+
   override fun removePropertyChangeListener(p0: PropertyChangeListener) {}
+
   override fun dispose() {}
+
   override fun getFile(): VirtualFile = diagramFile
 }
-
-

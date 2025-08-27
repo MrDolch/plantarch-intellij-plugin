@@ -21,7 +21,11 @@ import javax.swing.JPanel
 import javax.swing.JPopupMenu
 import kotlin.math.max
 
-class PngViewerPanel(puml: String, optionPanelState: OptionPanelState, val onChange: (String) -> Unit) : JPanel() {
+class PngViewerPanel(
+    puml: String,
+    optionPanelState: OptionPanelState,
+    val onChange: (String) -> Unit,
+) : JPanel() {
   private lateinit var image: BufferedImage
   lateinit var svg: String
   lateinit var puml: String
@@ -30,18 +34,23 @@ class PngViewerPanel(puml: String, optionPanelState: OptionPanelState, val onCha
   init {
     updatePanel(puml, optionPanelState)
     installPopupMenu(this)
-    addMouseMotionListener(object : MouseMotionAdapter() {
-      override fun mouseMoved(e: MouseEvent) {
-        val overClass = classNameBounds.values.any { it.contains(e.point) }
-        cursor = if (overClass) Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) else Cursor.getDefaultCursor()
-      }
-    })
-    addMouseListener(object : MouseAdapter() {
-      override fun mouseClicked(e: MouseEvent) {
-        classNameBounds.filter { it.value.contains(e.point) }
-          .forEach { onChange(it.key) }
-      }
-    })
+    addMouseMotionListener(
+        object : MouseMotionAdapter() {
+          override fun mouseMoved(e: MouseEvent) {
+            val overClass = classNameBounds.values.any { it.contains(e.point) }
+            cursor =
+                if (overClass) Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+                else Cursor.getDefaultCursor()
+          }
+        }
+    )
+    addMouseListener(
+        object : MouseAdapter() {
+          override fun mouseClicked(e: MouseEvent) {
+            classNameBounds.filter { it.value.contains(e.point) }.forEach { onChange(it.key) }
+          }
+        }
+    )
   }
 
   fun updatePanel(puml: String, optionPanelState: OptionPanelState) {
@@ -50,26 +59,36 @@ class PngViewerPanel(puml: String, optionPanelState: OptionPanelState, val onCha
     setPlantumlLimitSize()
     image = renderPng(puml)
     preferredSize = Dimension(image.width, image.height)
-    classNameBounds = collectSvgTexts(svg)
-      .filter {
-        optionPanelState.hiddenClasses.any { c -> c.endsWith(it.text) }
-            || optionPanelState.hiddenContainers.contains(it.text)
-      }
-      .associate { it.asEntry() }
+    classNameBounds =
+        collectSvgTexts(svg)
+            .filter {
+              optionPanelState.hiddenClasses.any { c -> c.endsWith(it.text) } ||
+                  optionPanelState.hiddenContainers.contains(it.text)
+            }
+            .associate { it.asEntry() }
   }
 
   private fun setPlantumlLimitSize() {
     val minWidth =
-      Regex("""<svg[^>]*\bwidth\s*=\s*["']\s*([0-9]+(?:\.[0-9]+)?)\s*(?:px)?["']""")
-        .find(svg)?.groupValues?.get(1)?.toInt() ?: 4096
+        Regex("""<svg[^>]*\bwidth\s*=\s*["']\s*([0-9]+(?:\.[0-9]+)?)\s*(?:px)?["']""")
+            .find(svg)
+            ?.groupValues
+            ?.get(1)
+            ?.toInt() ?: 4096
     val minHeight =
-      Regex("""<svg[^>]*\bheight\s*=\s*["']\s*([0-9]+(?:\.[0-9]+)?)\s*(?:px)?["']""")
-        .find(svg)?.groupValues?.get(1)?.toInt() ?: 4096
+        Regex("""<svg[^>]*\bheight\s*=\s*["']\s*([0-9]+(?:\.[0-9]+)?)\s*(?:px)?["']""")
+            .find(svg)
+            ?.groupValues
+            ?.get(1)
+            ?.toInt() ?: 4096
     System.setProperty("PLANTUML_LIMIT_SIZE", (32 + max(minWidth, minHeight)).toString())
   }
 
-  fun renderPng(puml: String): BufferedImage = ImageIO.read(renderDiagram(puml, FileFormat.PNG).inputStream())
+  fun renderPng(puml: String): BufferedImage =
+      ImageIO.read(renderDiagram(puml, FileFormat.PNG).inputStream())
+
   fun renderSvg(puml: String): String = String(renderDiagram(puml, FileFormat.SVG))
+
   private fun renderDiagram(puml: String, format: FileFormat): ByteArray {
     val outputStream = ByteArrayOutputStream()
     SourceStringReader(puml).outputImage(outputStream, 0, FileFormatOption(format))
@@ -82,37 +101,52 @@ class PngViewerPanel(puml: String, optionPanelState: OptionPanelState, val onCha
   }
 
   fun installPopupMenu(diagramPanel: JPanel) {
-    val popup = JPopupMenu().apply {
-      add(JMenuItem("Copy PNG Image").apply {
-        addActionListener { CopyPasteManager.getInstance().setContents(ImageTransferable(image)) }
-      })
-      add(JMenuItem("Copy PlantUml Source").apply {
-        addActionListener { CopyPasteManager.copyTextToClipboard(puml) }
-      })
-      add(JMenuItem("Copy SVG Image").apply {
-        addActionListener { CopyPasteManager.getInstance().setContents(SvgTransferable(svg)) }
-      })
-      add(JMenuItem("Copy SVG XML").apply {
-        addActionListener { CopyPasteManager.copyTextToClipboard(svg) }
-      })
-    }
-    diagramPanel.componentPopupMenu = popup
+    diagramPanel.componentPopupMenu =
+        JPopupMenu().apply {
+          add(
+              JMenuItem("Copy PNG Image").apply {
+                addActionListener {
+                  CopyPasteManager.getInstance().setContents(ImageTransferable(image))
+                }
+              }
+          )
+          add(
+              JMenuItem("Copy PlantUml Source").apply {
+                addActionListener { CopyPasteManager.copyTextToClipboard(puml) }
+              }
+          )
+          add(
+              JMenuItem("Copy SVG Image").apply {
+                addActionListener {
+                  CopyPasteManager.getInstance().setContents(SvgTransferable(svg))
+                }
+              }
+          )
+          add(
+              JMenuItem("Copy SVG XML").apply {
+                addActionListener { CopyPasteManager.copyTextToClipboard(svg) }
+              }
+          )
+        }
   }
 }
 
 private class ImageTransferable(val image: Image) : Transferable {
   override fun getTransferDataFlavors() = arrayOf(DataFlavor.imageFlavor)
+
   override fun isDataFlavorSupported(flavor: DataFlavor) = getTransferDataFlavors().contains(flavor)
-  override fun getTransferData(flavor: DataFlavor) = if (isDataFlavorSupported(flavor)) image else ""
+
+  override fun getTransferData(flavor: DataFlavor) =
+      if (isDataFlavorSupported(flavor)) image else ""
 }
 
 private class SvgTransferable(private val svg: String) : Transferable {
-  override fun getTransferDataFlavors(): Array<DataFlavor> = arrayOf(
-    DataFlavor("image/svg+xml; class=java.io.InputStream", "SVG (stream)")
-  )
+  override fun getTransferDataFlavors(): Array<DataFlavor> =
+      arrayOf(DataFlavor("image/svg+xml; class=java.io.InputStream", "SVG (stream)"))
 
   override fun isDataFlavorSupported(flavor: DataFlavor) = getTransferDataFlavors().contains(flavor)
+
   override fun getTransferData(flavor: DataFlavor) =
-    if (isDataFlavorSupported(flavor)) ByteArrayInputStream(svg.toByteArray(StandardCharsets.UTF_8))
-    else ""
+      if (!isDataFlavorSupported(flavor)) ""
+      else ByteArrayInputStream(svg.toByteArray(StandardCharsets.UTF_8))
 }

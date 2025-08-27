@@ -12,9 +12,9 @@ import javax.swing.border.TitledBorder
 import javax.swing.tree.*
 
 class ClassTreePanel(
-  jobParams: IdeaRenderJob,
-  treeProvider: (DefaultTreeModel) -> JTree = { treeModel -> Tree(treeModel) },
-  val onChange: () -> Unit
+    jobParams: IdeaRenderJob,
+    treeProvider: (DefaultTreeModel) -> JTree = { treeModel -> Tree(treeModel) },
+    val onChange: () -> Unit,
 ) : JPanel() {
   var containerEntries: List<ContainerEntry> = listOf()
   val treeModel: DefaultTreeModel = DefaultTreeModel(DefaultMutableTreeNode())
@@ -22,52 +22,69 @@ class ClassTreePanel(
 
   init {
     layout = BorderLayout()
-    tree = treeProvider(treeModel).apply {
-      isRootVisible = false
-      cellRenderer = CellRenderer
-      addMouseListener(SelectionListener(this, onChange))
-    }
+    tree =
+        treeProvider(treeModel).apply {
+          isRootVisible = false
+          cellRenderer = CellRenderer
+          addMouseListener(SelectionListener(this, onChange))
+        }
     add(JScrollPane(tree).apply { border = TitledBorder("Class Tree") })
     updatePanel(jobParams)
   }
 
   private fun getContainerEntries(jobParams: IdeaRenderJob): List<ContainerEntry> {
-    val classpathEntries: List<ClassEntry> = jobParams.optionPanelState.classesInFocus
-      .map {
-        ClassEntry(
-          name = it,
-          visibility = when {
-            jobParams.optionPanelState.classesInFocusSelected.contains(it) -> VisibilityStatus.IN_FOCUS
-            jobParams.optionPanelState.hiddenClassesSelected.contains(it) -> VisibilityStatus.HIDDEN
-            else -> VisibilityStatus.MAYBE
-          }
-        )
-      }
-    val packageEntries = classpathEntries.groupBy { it.getPackageName() }
-      .map { PackageEntry(it.key, it.value) }
+    val classpathEntries: List<ClassEntry> =
+        jobParams.optionPanelState.classesInFocus.map {
+          ClassEntry(
+              name = it,
+              visibility =
+                  when {
+                    jobParams.optionPanelState.classesInFocusSelected.contains(it) ->
+                        VisibilityStatus.IN_FOCUS
+                    jobParams.optionPanelState.hiddenClassesSelected.contains(it) ->
+                        VisibilityStatus.HIDDEN
+                    else -> VisibilityStatus.MAYBE
+                  },
+          )
+        }
+    val packageEntries =
+        classpathEntries.groupBy { it.getPackageName() }.map { PackageEntry(it.key, it.value) }
 
-    val containerEntries = jobParams.optionPanelState.hiddenContainers
-      .sorted().map {
-        ContainerEntry(
-          it, emptyList(),
-          if (jobParams.renderJob.classDiagrams.containersToHide.contains(it)) VisibilityStatus.HIDDEN else VisibilityStatus.MAYBE
-        )
-      }
+    val containerEntries =
+        jobParams.optionPanelState.hiddenContainers.sorted().map {
+          ContainerEntry(
+              it,
+              emptyList(),
+              if (jobParams.renderJob.classDiagrams.containersToHide.contains(it))
+                  VisibilityStatus.HIDDEN
+              else VisibilityStatus.MAYBE,
+          )
+        }
     return listOf(ContainerEntry("Source Classes", packageEntries)) + containerEntries
   }
 
   fun buildTreeModel(entries: List<ContainerEntry>): DefaultMutableTreeNode {
     return DefaultMutableTreeNode("Root")
-      .withChildren(entries.map { containerEntry ->
-        DefaultMutableTreeNode(containerEntry)
-          .withChildren(containerEntry.packages.map { packageEntry ->
-            DefaultMutableTreeNode(packageEntry)
-              .withChildren(packageEntry.classes.map { classEntry -> DefaultMutableTreeNode(classEntry) })
-          })
-      })
+        .withChildren(
+            entries.map { containerEntry ->
+              DefaultMutableTreeNode(containerEntry)
+                  .withChildren(
+                      containerEntry.packages.map { packageEntry ->
+                        DefaultMutableTreeNode(packageEntry)
+                            .withChildren(
+                                packageEntry.classes.map { classEntry ->
+                                  DefaultMutableTreeNode(classEntry)
+                                }
+                            )
+                      }
+                  )
+            }
+        )
   }
 
-  fun DefaultMutableTreeNode.withChildren(newChildren: List<MutableTreeNode>): DefaultMutableTreeNode {
+  fun DefaultMutableTreeNode.withChildren(
+      newChildren: List<MutableTreeNode>
+  ): DefaultMutableTreeNode {
     newChildren.forEach { add(it) }
     return this
   }
@@ -100,34 +117,36 @@ class ClassTreePanel(
     expandRecursively(root, TreePath(root))
   }
 
-
   fun updatePanel(jobParams: IdeaRenderJob) {
     containerEntries = getContainerEntries(jobParams)
     treeModel.setRoot(buildTreeModel(containerEntries))
     expandSelectedBranches(tree)
   }
 
-
   fun toggleEntryFromDiagram(text: String) {
     // toggle Containers
     val visibleContainers = containerEntries.filter { it.visibility == VisibilityStatus.MAYBE }
-    visibleContainers.filter { it.name == text }
-      .forEach {
-        it.visibility = VisibilityStatus.HIDDEN
-        tree.invalidate()
-        tree.updateUI()
-        onChange()
-        return
-      }
+    visibleContainers
+        .filter { it.name == text }
+        .forEach {
+          it.visibility = VisibilityStatus.HIDDEN
+          tree.invalidate()
+          tree.updateUI()
+          onChange()
+          return
+        }
 
     // toggle Classes
-    val toToggle = visibleContainers.flatMap { it.packages }.flatMap { it.classes }
-      .filter { it.name.endsWith(".$text") || it.name == text }
+    val toToggle =
+        visibleContainers
+            .flatMap { it.packages }
+            .flatMap { it.classes }
+            .filter { it.name.endsWith(".$text") || it.name == text }
     if (toToggle.isNotEmpty()) {
       toToggle.forEach {
         it.visibility =
-          if (it.visibility == VisibilityStatus.MAYBE) VisibilityStatus.IN_FOCUS
-          else VisibilityStatus.MAYBE
+            if (it.visibility == VisibilityStatus.MAYBE) VisibilityStatus.IN_FOCUS
+            else VisibilityStatus.MAYBE
       }
       tree.invalidate()
       tree.updateUI()
@@ -135,17 +154,23 @@ class ClassTreePanel(
     }
   }
 
-  fun getClassesToAnalyze() = containerEntries.flatMap { it.packages }.flatMap { it.classes }
-    .filter { it.visibility == VisibilityStatus.IN_FOCUS }.map { it.name }
+  fun getClassesToAnalyze() =
+      containerEntries
+          .flatMap { it.packages }
+          .flatMap { it.classes }
+          .filter { it.visibility == VisibilityStatus.IN_FOCUS }
+          .map { it.name }
 
-  fun getClassesToHide() = containerEntries.flatMap { it.packages }.flatMap { it.classes }
-    .filter { it.visibility == VisibilityStatus.HIDDEN }.map { it.name }
+  fun getClassesToHide() =
+      containerEntries
+          .flatMap { it.packages }
+          .flatMap { it.classes }
+          .filter { it.visibility == VisibilityStatus.HIDDEN }
+          .map { it.name }
 
-  fun getContainersToHide(): List<String> = containerEntries
-    .filter { it.visibility == VisibilityStatus.HIDDEN }.map { it.name }
-
+  fun getContainersToHide(): List<String> =
+      containerEntries.filter { it.visibility == VisibilityStatus.HIDDEN }.map { it.name }
 }
-
 
 class SelectionListener(val tree: JTree, val onChange: () -> Unit) : MouseAdapter() {
   override fun mousePressed(e: MouseEvent) {
@@ -154,7 +179,8 @@ class SelectionListener(val tree: JTree, val onChange: () -> Unit) : MouseAdapte
     val fontHeight = tree.getFontMetrics(tree.font).height
     val relativeX = e.x - bounds.x
     val relativeY = e.y - bounds.y
-    val isInCheckBox = 0 <= relativeX && relativeX <= fontHeight && 0 <= relativeY && relativeY <= fontHeight
+    val isInCheckBox =
+        0 <= relativeX && relativeX <= fontHeight && 0 <= relativeY && relativeY <= fontHeight
     println("Font height: $fontHeight, bounds: $bounds  ($relativeX, $relativeY)")
     val node = path.lastPathComponent as? DefaultMutableTreeNode ?: return
     if (SwingUtilities.isLeftMouseButton(e)) {
@@ -163,33 +189,39 @@ class SelectionListener(val tree: JTree, val onChange: () -> Unit) : MouseAdapte
       val entry = node.userObject
       when (entry) {
         is ClassEntry -> {
-          entry.visibility = when (entry.visibility) {
-            VisibilityStatus.HIDDEN -> VisibilityStatus.MAYBE
-            VisibilityStatus.IN_FOCUS -> if (isCtrlDown) VisibilityStatus.HIDDEN else VisibilityStatus.MAYBE
-            else -> if (isCtrlDown) VisibilityStatus.HIDDEN else VisibilityStatus.IN_FOCUS
-          }
+          entry.visibility =
+              when (entry.visibility) {
+                VisibilityStatus.HIDDEN -> VisibilityStatus.MAYBE
+                VisibilityStatus.IN_FOCUS ->
+                    if (isCtrlDown) VisibilityStatus.HIDDEN else VisibilityStatus.MAYBE
+                else -> if (isCtrlDown) VisibilityStatus.HIDDEN else VisibilityStatus.IN_FOCUS
+              }
           tree.invalidate()
           tree.updateUI()
           onChange()
         }
 
-        is PackageEntry -> if (isInCheckBox) {
-          entry.visibility = when (entry.visibility) {
-            VisibilityStatus.HIDDEN -> VisibilityStatus.MAYBE
-            VisibilityStatus.IN_FOCUS -> if (isCtrlDown) VisibilityStatus.HIDDEN else VisibilityStatus.MAYBE
-            else -> if (isCtrlDown) VisibilityStatus.HIDDEN else VisibilityStatus.IN_FOCUS
-          }
-          entry.classes.forEach { it.visibility = entry.visibility }
-          tree.invalidate()
-          tree.updateUI()
-          onChange()
-        }
+        is PackageEntry ->
+            if (isInCheckBox) {
+              entry.visibility =
+                  when (entry.visibility) {
+                    VisibilityStatus.HIDDEN -> VisibilityStatus.MAYBE
+                    VisibilityStatus.IN_FOCUS ->
+                        if (isCtrlDown) VisibilityStatus.HIDDEN else VisibilityStatus.MAYBE
+                    else -> if (isCtrlDown) VisibilityStatus.HIDDEN else VisibilityStatus.IN_FOCUS
+                  }
+              entry.classes.forEach { it.visibility = entry.visibility }
+              tree.invalidate()
+              tree.updateUI()
+              onChange()
+            }
 
         is ContainerEntry -> {
-          entry.visibility = when (entry.visibility) {
-            VisibilityStatus.HIDDEN -> VisibilityStatus.MAYBE
-            else -> VisibilityStatus.HIDDEN
-          }
+          entry.visibility =
+              when (entry.visibility) {
+                VisibilityStatus.HIDDEN -> VisibilityStatus.MAYBE
+                else -> VisibilityStatus.HIDDEN
+              }
           tree.invalidate()
           tree.updateUI()
           onChange()
@@ -201,8 +233,13 @@ class SelectionListener(val tree: JTree, val onChange: () -> Unit) : MouseAdapte
 
 object CellRenderer : DefaultTreeCellRenderer() {
   override fun getTreeCellRendererComponent(
-    tree: JTree, value: Any, selected: Boolean,
-    expanded: Boolean, leaf: Boolean, row: Int, hasFocus: Boolean
+      tree: JTree,
+      value: Any,
+      selected: Boolean,
+      expanded: Boolean,
+      leaf: Boolean,
+      row: Int,
+      hasFocus: Boolean,
   ): Component {
     val node = value as DefaultMutableTreeNode
     val treeEntry = node.userObject
@@ -210,35 +247,37 @@ object CellRenderer : DefaultTreeCellRenderer() {
     return when (treeEntry) {
       is ContainerEntry -> {
         JLabel(
-          when {
-            treeEntry.packages.isNotEmpty() -> treeEntry.name
-            treeEntry.visibility == VisibilityStatus.HIDDEN -> "<html>\u2612 <s>${treeEntry.name}</s></html>"
-            else -> "\u2610 " + treeEntry.name
-          }
+            when {
+              treeEntry.packages.isNotEmpty() -> treeEntry.name
+              treeEntry.visibility == VisibilityStatus.HIDDEN ->
+                  "<html>\u2612 <s>${treeEntry.name}</s></html>"
+              else -> "\u2610 " + treeEntry.name
+            }
         )
       }
 
       is PackageEntry -> {
         JLabel(
-          when (treeEntry.visibility) {
-            VisibilityStatus.IN_FOCUS -> "<html>\u2611 <b>${treeEntry.name}</b></html>"
-            VisibilityStatus.HIDDEN -> "<html>\u2612 <s>${treeEntry.name}</s></html>"
-            else -> "\u2610 " + treeEntry.name
-          }
+            when (treeEntry.visibility) {
+              VisibilityStatus.IN_FOCUS -> "<html>\u2611 <b>${treeEntry.name}</b></html>"
+              VisibilityStatus.HIDDEN -> "<html>\u2612 <s>${treeEntry.name}</s></html>"
+              else -> "\u2610 " + treeEntry.name
+            }
         )
       }
 
       is ClassEntry -> {
         JLabel(
-          when (treeEntry.visibility) {
-            VisibilityStatus.IN_FOCUS -> "<html>\u2611 <b>${treeEntry.getSimpleName()}</b></html>"
-            VisibilityStatus.HIDDEN -> "<html>\u2612 <s>${treeEntry.getSimpleName()}</s></html>"
-            else -> "\u2610 " + treeEntry.getSimpleName()
-          }
+            when (treeEntry.visibility) {
+              VisibilityStatus.IN_FOCUS -> "<html>\u2611 <b>${treeEntry.getSimpleName()}</b></html>"
+              VisibilityStatus.HIDDEN -> "<html>\u2612 <s>${treeEntry.getSimpleName()}</s></html>"
+              else -> "\u2610 " + treeEntry.getSimpleName()
+            }
         )
       }
 
-      else -> super.getTreeCellRendererComponent(tree, value, selected, expanded, leaf, row, hasFocus)
+      else ->
+          super.getTreeCellRendererComponent(tree, value, selected, expanded, leaf, row, hasFocus)
     }
   }
 }

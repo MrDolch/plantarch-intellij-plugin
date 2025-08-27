@@ -13,7 +13,8 @@ class ActionStartNewDiagram : AnAction() {
     e.project?.let { project ->
       val editor = FileEditorManager.getInstance(project).selectedTextEditor ?: return
       val psiFile =
-        PsiDocumentManager.getInstance(project).getPsiFile(editor.document) as? PsiClassOwner ?: return
+          PsiDocumentManager.getInstance(project).getPsiFile(editor.document) as? PsiClassOwner
+              ?: return
       val className = psiFile.classes.firstOrNull()?.qualifiedName ?: return
       val module = ModuleUtil.findModuleForPsiElement(psiFile) ?: return
       val jobParams = createIdeaRenderJob(module, className)
