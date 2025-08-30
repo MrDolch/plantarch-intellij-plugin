@@ -38,7 +38,7 @@ dependencies {
   testImplementation("io.kotest:kotest-framework-datatest:5.9.1")
 
   implementation("io.github.mrdolch:plantarch:0.1.17") { artifact { classifier = "launcher" } }
-  implementation("com.charleskorn.kaml:kaml:0.92.0")
+  implementation("com.charleskorn.kaml:kaml:0.93.0")
   implementation("net.sourceforge.plantuml:plantuml:1.2025.4")
 
   // IntelliJ Platform Gradle Plugin Dependencies Extension - read more:
