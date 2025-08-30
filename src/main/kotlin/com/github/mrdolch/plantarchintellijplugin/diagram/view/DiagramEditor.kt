@@ -3,6 +3,7 @@ package com.github.mrdolch.plantarchintellijplugin.diagram.view
 import com.charleskorn.kaml.Yaml
 import com.github.mrdolch.plantarchintellijplugin.app.EditorRegistry
 import com.github.mrdolch.plantarchintellijplugin.diagram.ExecPlantArch
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorState
 import com.intellij.openapi.util.UserDataHolderBase
@@ -33,7 +34,10 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
           toggleEntryFromDiagram(it)
         }
     umlOptionsPanel = UmlOptionsPanel(jobParams) { updateDiagram() }
-    classTreePanel = ClassTreePanel(jobParams) { updateDiagram() }
+    classTreePanel =
+        ClassTreePanel(jobParams) {
+          if (umlOptionsPanel.autoRenderDiagram.isSelected) updateDiagram()
+        }
     val optionsPanel = JPanel(BorderLayout())
     optionsPanel.add(umlOptionsPanel, BorderLayout.NORTH)
     optionsPanel.add(classTreePanel, BorderLayout.CENTER)
@@ -63,6 +67,7 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
   fun updateDiagram() {
     jobParams.renderJob.classDiagrams.let {
       it.classesToAnalyze = classTreePanel.getClassesToAnalyze()
+      it.packagesToAnalyze = classTreePanel.getPackagesToAnalyze()
       it.containersToHide = classTreePanel.getContainersToHide()
       it.classesToHide = classTreePanel.getClassesToHide()
       it.showUseByMethodNames = umlOptionsPanel.getShowUseByMethodNames()
@@ -76,9 +81,9 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
 
   fun updateFields(diagramContent: String) {
     jobParams = getJobParams(diagramContent)
-    umlOptionsPanel.updateFields(jobParams)
-    classTreePanel.updatePanel(jobParams)
     pngViewerPanel.updatePanel(diagramContent, jobParams.optionPanelState)
+    umlOptionsPanel.updateFields(jobParams)
+    ApplicationManager.getApplication().invokeLater { classTreePanel.updatePanel(jobParams) }
   }
 
   fun toggleEntryFromDiagram(selectedText: String) {

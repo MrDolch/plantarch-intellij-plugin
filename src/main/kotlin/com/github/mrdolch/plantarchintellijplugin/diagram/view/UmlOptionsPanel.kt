@@ -22,6 +22,7 @@ class UmlOptionsPanel(jobParams: IdeaRenderJob, val onChange: () -> Unit) : JPan
       ComboBox(ShowPackages.entries.toTypedArray()).apply {
         selectedItem = jobParams.optionPanelState.showPackages
       }
+  val autoRenderDiagram = JCheckBox("Auto Render diagram", true)
 
   init {
     layout = BorderLayout()
@@ -35,12 +36,22 @@ class UmlOptionsPanel(jobParams: IdeaRenderJob, val onChange: () -> Unit) : JPan
                       add(JScrollPane(descriptionArea))
                     }
                 )
-                .addLabeledComponent(
-                    "",
-                    JButton("Render diagram").apply { addActionListener { onChange() } },
+                .addComponent(
+                    JPanel(GridLayout(1, 2)).apply {
+                      val renderDiagramButton =
+                          JButton("Render diagram").apply {
+                            isEnabled = false
+                            addActionListener { onChange() }
+                          }
+                      autoRenderDiagram.addItemListener {
+                        renderDiagramButton.isEnabled = !autoRenderDiagram.isSelected
+                      }
+                      add(renderDiagramButton)
+                      add(autoRenderDiagram)
+                    }
                 )
                 .addComponent(
-                    JPanel(GridLayout(0, 1)).apply {
+                    JPanel(GridLayout(2, 1)).apply {
                       border = BorderFactory.createTitledBorder("Options")
                       add(
                           JPanel(FlowLayout(FlowLayout.LEFT)).apply {
@@ -78,12 +89,12 @@ class UmlOptionsPanel(jobParams: IdeaRenderJob, val onChange: () -> Unit) : JPan
     showMethodNamesDropdown.let {
       it.itemListeners.forEach { listener -> it.removeItemListener(listener) }
       it.selectedItem = jobParams.renderJob.classDiagrams.showUseByMethodNames
-      it.addItemListener { onChange() }
+      it.addItemListener { if (autoRenderDiagram.isSelected) onChange() }
     }
     showPackagesDropdown.let {
       it.itemListeners.forEach { listener -> it.removeItemListener(listener) }
       it.selectedItem = jobParams.optionPanelState.showPackages
-      it.addItemListener { onChange() }
+      it.addItemListener { if (autoRenderDiagram.isSelected) onChange() }
     }
   }
 }

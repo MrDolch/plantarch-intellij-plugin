@@ -32,7 +32,7 @@ object DiagramView {
               .replaceFirst("@startuml\n", "@startuml\nset namespaceSeparator ::")
     }
     if (job.optionPanelState.showPackages == ShowPackages.NONE) {
-      plantuml = plantuml.replace("\\b(?:[a-z][a-zA-Z]*\\.)+(?=[A-Z])".toRegex(), "")
+      plantuml = plantuml.replace("\\b(?:[a-z_][a-zA-Z0-9_]*\\.)+(?=[A-Z])".toRegex(), "")
     }
     val globalOptions =
         """

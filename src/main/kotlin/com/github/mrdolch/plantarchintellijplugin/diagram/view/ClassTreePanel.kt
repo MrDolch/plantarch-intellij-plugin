@@ -1,5 +1,11 @@
 package com.github.mrdolch.plantarchintellijplugin.diagram.view
 
+import com.github.mrdolch.plantarchintellijplugin.diagram.getProjectByName
+import com.intellij.openapi.project.DumbService
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Computable
+import com.intellij.psi.search.GlobalSearchScope
+import com.intellij.psi.search.searches.AllClassesSearch
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.tree.TreeUtil.getPathForLocation
 import tech.dolch.plantarch.cmd.IdeaRenderJob
@@ -33,61 +39,74 @@ class ClassTreePanel(
   }
 
   private fun getContainerEntries(jobParams: IdeaRenderJob): List<ContainerEntry> {
+    val project = getProjectByName(jobParams.projectName)
     val classpathEntries: List<ClassEntry> =
-        jobParams.optionPanelState.classesInFocus.map {
+        //        jobParams.optionPanelState.classesInFocus.map {
+        getAllQualifiedClassNames(project).map {
+          val inFocus = jobParams.optionPanelState.classesInFocusSelected
+          val hidden = jobParams.optionPanelState.hiddenClassesSelected
+          val visible = jobParams.optionPanelState.classesInFocus
           ClassEntry(
               name = it,
               visibility =
                   when {
-                    jobParams.optionPanelState.classesInFocusSelected.contains(it) ->
-                        VisibilityStatus.IN_FOCUS
-                    jobParams.optionPanelState.hiddenClassesSelected.contains(it) ->
-                        VisibilityStatus.HIDDEN
-                    else -> VisibilityStatus.MAYBE
+                    inFocus.contains(it) -> VisibilityStatus.IN_FOCUS
+                    hidden.contains(it) -> VisibilityStatus.HIDDEN
+                    visible.contains(it) -> VisibilityStatus.MAYBE
+                    else -> VisibilityStatus.IN_CLASSPATH
                   },
           )
         }
     val packageEntries =
-        classpathEntries.groupBy { it.getPackageName() }.map { PackageEntry(it.key, it.value) }
+        classpathEntries
+            .groupBy { it.getPackageName() }
+            .map {
+              PackageEntry(
+                  it.key,
+                  when {
+                    jobParams.renderJob.classDiagrams.packagesToAnalyze.contains(it.key) ->
+                        VisibilityStatus.IN_FOCUS
+                    else -> VisibilityStatus.MAYBE
+                  },
+                  it.value,
+              )
+            }
 
     val containerEntries =
         jobParams.optionPanelState.hiddenContainers.sorted().map {
           ContainerEntry(
               it,
-              emptyList(),
               if (jobParams.renderJob.classDiagrams.containersToHide.contains(it))
                   VisibilityStatus.HIDDEN
               else VisibilityStatus.MAYBE,
+              emptyList(),
           )
         }
-    return listOf(ContainerEntry("Source Classes", packageEntries)) + containerEntries
+    return listOf(ContainerEntry("Source Classes", packages = packageEntries)) + containerEntries
   }
 
-  fun buildTreeModel(entries: List<ContainerEntry>): DefaultMutableTreeNode {
-    return DefaultMutableTreeNode("Root")
-        .withChildren(
-            entries.map { containerEntry ->
-              DefaultMutableTreeNode(containerEntry)
-                  .withChildren(
-                      containerEntry.packages.map { packageEntry ->
-                        DefaultMutableTreeNode(packageEntry)
-                            .withChildren(
-                                packageEntry.classes.map { classEntry ->
-                                  DefaultMutableTreeNode(classEntry)
-                                }
-                            )
-                      }
-                  )
-            }
-        )
-  }
+  fun getAllQualifiedClassNames(project: Project): List<String> =
+      DumbService.getInstance(project)
+          .runReadActionInSmartMode(
+              Computable {
+                AllClassesSearch.search(GlobalSearchScope.projectScope(project), project)
+                    .filter { psiClass -> psiClass.containingClass == null }
+                    .mapNotNull { it.qualifiedName }
+                    .sorted()
+              }
+          )
 
-  fun DefaultMutableTreeNode.withChildren(
-      newChildren: List<MutableTreeNode>
-  ): DefaultMutableTreeNode {
-    newChildren.forEach { add(it) }
-    return this
-  }
+  fun buildTreeModel(entries: List<ContainerEntry>) =
+      DefaultMutableTreeNode("Root").withChildrenOf(entries) { ce ->
+        DefaultMutableTreeNode(ce).withChildrenOf(ce.packages) { pe ->
+          DefaultMutableTreeNode(pe).withChildrenOf(pe.classes) { cl -> DefaultMutableTreeNode(cl) }
+        }
+      }
+
+  private fun <T> DefaultMutableTreeNode.withChildrenOf(
+      items: Iterable<T>,
+      build: (T) -> DefaultMutableTreeNode,
+  ): DefaultMutableTreeNode = apply { items.forEach { add(build(it)) } }
 
   fun expandSelectedBranches(tree: JTree) {
     val model = tree.model as DefaultTreeModel
@@ -96,7 +115,7 @@ class ClassTreePanel(
     fun shouldExpand(node: TreeNode): Boolean {
       if (node is DefaultMutableTreeNode) {
         val userObj = node.userObject
-        if (userObj is ClassEntry && userObj.visibility == VisibilityStatus.IN_FOCUS) {
+        if (userObj !is Entry || userObj.visibility == VisibilityStatus.IN_FOCUS) {
           return true
         }
         val children = (0 until node.childCount).map { node.getChildAt(it) }
@@ -157,15 +176,27 @@ class ClassTreePanel(
   fun getClassesToAnalyze() =
       containerEntries
           .flatMap { it.packages }
+          .filter { it.visibility != VisibilityStatus.HIDDEN }
           .flatMap { it.classes }
           .filter { it.visibility == VisibilityStatus.IN_FOCUS }
           .map { it.name }
 
-  fun getClassesToHide() =
+  fun getPackagesToAnalyze() =
       containerEntries
           .flatMap { it.packages }
-          .flatMap { it.classes }
-          .filter { it.visibility == VisibilityStatus.HIDDEN }
+          .filter { it.visibility == VisibilityStatus.IN_FOCUS }
+          .map { it.name }
+
+  fun getClassesToHide() =
+      (containerEntries
+              .flatMap { it.packages }
+              .flatMap { it.classes }
+              .filter { it.visibility == VisibilityStatus.HIDDEN } +
+              containerEntries
+                  .flatMap { it.packages }
+                  .filter { it.visibility == VisibilityStatus.HIDDEN }
+                  .flatMap { it.classes })
+          .distinct()
           .map { it.name }
 
   fun getContainersToHide(): List<String> =
@@ -210,7 +241,8 @@ class SelectionListener(val tree: JTree, val onChange: () -> Unit) : MouseAdapte
                         if (isCtrlDown) VisibilityStatus.HIDDEN else VisibilityStatus.MAYBE
                     else -> if (isCtrlDown) VisibilityStatus.HIDDEN else VisibilityStatus.IN_FOCUS
                   }
-              entry.classes.forEach { it.visibility = entry.visibility }
+              //              if (entry.visibility != VisibilityStatus.IN_FOCUS)
+              //                  entry.classes.forEach { it.visibility = entry.visibility }
               tree.invalidate()
               tree.updateUI()
               onChange()
@@ -231,6 +263,7 @@ class SelectionListener(val tree: JTree, val onChange: () -> Unit) : MouseAdapte
   }
 }
 
+@Suppress("JavaIoSerializableObjectMustHaveReadResolve")
 object CellRenderer : DefaultTreeCellRenderer() {
   override fun getTreeCellRendererComponent(
       tree: JTree,
