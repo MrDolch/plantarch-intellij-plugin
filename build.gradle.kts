@@ -33,9 +33,9 @@ repositories {
 // https://docs.gradle.org/current/userguide/platforms.html#sub:version-catalog
 dependencies {
   // Kotest Core
-  testImplementation("io.kotest:kotest-runner-junit5:5.9.1")
-  testImplementation("io.kotest:kotest-assertions-core:5.9.1")
-  testImplementation("io.kotest:kotest-framework-datatest:5.9.1")
+  testImplementation("io.kotest:kotest-runner-junit5:6.0.1")
+  testImplementation("io.kotest:kotest-assertions-core:6.0.1")
+  testImplementation("io.kotest:kotest-framework-datatest:6.0.1")
 
   implementation("io.github.mrdolch:plantarch:0.1.17") { artifact { classifier = "launcher" } }
   implementation("com.charleskorn.kaml:kaml:0.92.0")
