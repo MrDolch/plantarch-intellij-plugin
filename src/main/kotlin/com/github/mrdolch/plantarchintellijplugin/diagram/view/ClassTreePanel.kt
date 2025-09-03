@@ -1,11 +1,6 @@
 package com.github.mrdolch.plantarchintellijplugin.diagram.view
 
-import com.github.mrdolch.plantarchintellijplugin.diagram.getProjectByName
-import com.intellij.openapi.project.DumbService
-import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.Computable
-import com.intellij.psi.search.GlobalSearchScope
-import com.intellij.psi.search.searches.AllClassesSearch
+import com.intellij.openapi.Disposable
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.tree.TreeUtil.getPathForLocation
 import tech.dolch.plantarch.cmd.IdeaRenderJob
@@ -21,10 +16,11 @@ class ClassTreePanel(
     jobParams: IdeaRenderJob,
     treeProvider: (DefaultTreeModel) -> JTree = { treeModel -> Tree(treeModel) },
     val onChange: () -> Unit,
-) : JPanel() {
+) : JPanel(), Disposable {
   var containerEntries: List<ContainerEntry> = listOf()
   val treeModel: DefaultTreeModel = DefaultTreeModel(DefaultMutableTreeNode())
   val tree: JTree
+  var allQualifiedClassNames: List<String> = emptyList()
 
   init {
     layout = BorderLayout()
@@ -39,24 +35,26 @@ class ClassTreePanel(
   }
 
   private fun getContainerEntries(jobParams: IdeaRenderJob): List<ContainerEntry> {
-    val project = getProjectByName(jobParams.projectName)
     val classpathEntries: List<ClassEntry> =
-        //        jobParams.optionPanelState.classesInFocus.map {
-        getAllQualifiedClassNames(project).map {
-          val inFocus = jobParams.optionPanelState.classesInFocusSelected
-          val hidden = jobParams.optionPanelState.hiddenClassesSelected
-          val visible = jobParams.optionPanelState.classesInFocus
-          ClassEntry(
-              name = it,
-              visibility =
-                  when {
-                    inFocus.contains(it) -> VisibilityStatus.IN_FOCUS
-                    hidden.contains(it) -> VisibilityStatus.HIDDEN
-                    visible.contains(it) -> VisibilityStatus.MAYBE
-                    else -> VisibilityStatus.IN_CLASSPATH
-                  },
-          )
-        }
+        (allQualifiedClassNames + jobParams.optionPanelState.classesInFocus)
+            .sorted()
+            .distinct()
+            .map {
+              // allQualifiedClassNames.map {
+              val inFocus = jobParams.optionPanelState.classesInFocusSelected
+              val hidden = jobParams.optionPanelState.hiddenClassesSelected
+              val visible = jobParams.optionPanelState.classesInFocus
+              ClassEntry(
+                  name = it,
+                  visibility =
+                      when {
+                        inFocus.contains(it) -> VisibilityStatus.IN_FOCUS
+                        hidden.contains(it) -> VisibilityStatus.HIDDEN
+                        visible.contains(it) -> VisibilityStatus.MAYBE
+                        else -> VisibilityStatus.IN_CLASSPATH
+                      },
+              )
+            }
     val packageEntries =
         classpathEntries
             .groupBy { it.getPackageName() }
@@ -66,6 +64,7 @@ class ClassTreePanel(
                   when {
                     jobParams.renderJob.classDiagrams.packagesToAnalyze.contains(it.key) ->
                         VisibilityStatus.IN_FOCUS
+
                     else -> VisibilityStatus.MAYBE
                   },
                   it.value,
@@ -84,17 +83,6 @@ class ClassTreePanel(
         }
     return listOf(ContainerEntry("Source Classes", packages = packageEntries)) + containerEntries
   }
-
-  fun getAllQualifiedClassNames(project: Project): List<String> =
-      DumbService.getInstance(project)
-          .runReadActionInSmartMode(
-              Computable {
-                AllClassesSearch.search(GlobalSearchScope.projectScope(project), project)
-                    .filter { psiClass -> psiClass.containingClass == null }
-                    .mapNotNull { it.qualifiedName }
-                    .sorted()
-              }
-          )
 
   fun buildTreeModel(entries: List<ContainerEntry>) =
       DefaultMutableTreeNode("Root").withChildrenOf(entries) { ce ->
@@ -201,6 +189,8 @@ class ClassTreePanel(
 
   fun getContainersToHide(): List<String> =
       containerEntries.filter { it.visibility == VisibilityStatus.HIDDEN }.map { it.name }
+
+  override fun dispose() {}
 }
 
 class SelectionListener(val tree: JTree, val onChange: () -> Unit) : MouseAdapter() {
@@ -225,6 +215,7 @@ class SelectionListener(val tree: JTree, val onChange: () -> Unit) : MouseAdapte
                 VisibilityStatus.HIDDEN -> VisibilityStatus.MAYBE
                 VisibilityStatus.IN_FOCUS ->
                     if (isCtrlDown) VisibilityStatus.HIDDEN else VisibilityStatus.MAYBE
+
                 else -> if (isCtrlDown) VisibilityStatus.HIDDEN else VisibilityStatus.IN_FOCUS
               }
           tree.invalidate()
@@ -239,6 +230,7 @@ class SelectionListener(val tree: JTree, val onChange: () -> Unit) : MouseAdapte
                     VisibilityStatus.HIDDEN -> VisibilityStatus.MAYBE
                     VisibilityStatus.IN_FOCUS ->
                         if (isCtrlDown) VisibilityStatus.HIDDEN else VisibilityStatus.MAYBE
+
                     else -> if (isCtrlDown) VisibilityStatus.HIDDEN else VisibilityStatus.IN_FOCUS
                   }
               //              if (entry.visibility != VisibilityStatus.IN_FOCUS)
@@ -284,6 +276,7 @@ object CellRenderer : DefaultTreeCellRenderer() {
               treeEntry.packages.isNotEmpty() -> treeEntry.name
               treeEntry.visibility == VisibilityStatus.HIDDEN ->
                   "<html>\u2612 <s>${treeEntry.name}</s></html>"
+
               else -> "\u2610 " + treeEntry.name
             }
         )

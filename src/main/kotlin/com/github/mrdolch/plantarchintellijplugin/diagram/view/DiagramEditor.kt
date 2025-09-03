@@ -3,12 +3,23 @@ package com.github.mrdolch.plantarchintellijplugin.diagram.view
 import com.charleskorn.kaml.Yaml
 import com.github.mrdolch.plantarchintellijplugin.app.EditorRegistry
 import com.github.mrdolch.plantarchintellijplugin.diagram.ExecPlantArch
+import com.github.mrdolch.plantarchintellijplugin.diagram.getProjectByName
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ModalityState
+import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorState
+import com.intellij.openapi.project.DumbService
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Computable
+import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.UserDataHolderBase
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.readText
+import com.intellij.psi.search.GlobalSearchScope
+import com.intellij.psi.search.searches.AllClassesSearch
+import com.intellij.util.concurrency.AppExecutorUtil
 import tech.dolch.plantarch.cmd.IdeaRenderJob
 import java.awt.BorderLayout
 import java.beans.PropertyChangeListener
@@ -24,6 +35,7 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
   private val umlOptionsPanel: UmlOptionsPanel
   private val classTreePanel: ClassTreePanel
   private val pngViewerPanel: PngViewerPanel
+  private val disposable = Disposer.newDisposable()
 
   init {
     EditorRegistry.registerEditor(diagramFile, this)
@@ -34,10 +46,13 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
           toggleEntryFromDiagram(it)
         }
     umlOptionsPanel = UmlOptionsPanel(jobParams) { updateDiagram() }
+    val project = getProjectByName(jobParams.projectName)
     classTreePanel =
         ClassTreePanel(jobParams) {
           if (umlOptionsPanel.autoRenderDiagram.isSelected) updateDiagram()
         }
+    loadDataAsync(jobParams, project, this, classTreePanel)
+
     val optionsPanel = JPanel(BorderLayout())
     optionsPanel.add(umlOptionsPanel, BorderLayout.NORTH)
     optionsPanel.add(classTreePanel, BorderLayout.CENTER)
@@ -56,6 +71,33 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
         BorderLayout.CENTER,
     )
   }
+
+  private fun loadDataAsync(
+      jobParams: IdeaRenderJob,
+      project: Project,
+      disposable: Disposable,
+      classTreePanel: ClassTreePanel,
+  ) {
+    ReadAction.nonBlocking<List<String>> { getAllQualifiedClassNames(project) }
+        .inSmartMode(project)
+        .expireWith(disposable)
+        .finishOnUiThread(ModalityState.any()) { classNames ->
+          classTreePanel.allQualifiedClassNames = classNames
+          classTreePanel.updatePanel(jobParams)
+        }
+        .submit(AppExecutorUtil.getAppExecutorService())
+  }
+
+  private fun getAllQualifiedClassNames(project: Project): List<String> =
+      DumbService.getInstance(project)
+          .runReadActionInSmartMode(
+              Computable {
+                AllClassesSearch.search(GlobalSearchScope.projectScope(project), project)
+                    .filter { psiClass -> psiClass.containingClass == null }
+                    .mapNotNull { it.qualifiedName }
+                    .sorted()
+              }
+          )
 
   private fun getJobParams(diagramContent: String): IdeaRenderJob {
     val content = diagramContent.lines()
@@ -106,7 +148,9 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
 
   override fun removePropertyChangeListener(p0: PropertyChangeListener) {}
 
-  override fun dispose() {}
+  override fun dispose() {
+    Disposer.dispose(disposable)
+  }
 
   override fun getFile(): VirtualFile = diagramFile
 }

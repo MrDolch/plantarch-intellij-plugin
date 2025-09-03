@@ -11,57 +11,64 @@ import tech.dolch.plantarch.cmd.ShowPackages
 import java.awt.event.KeyEvent
 import javax.swing.*
 
-class ClassTreePanelTest : StringSpec({
-
-  fun sampleJob(): IdeaRenderJob {
-    return IdeaRenderJob(
-      optionPanelState = OptionPanelState(
-        classesInFocus = listOf("com.acme.Foo", "com.acme.Bar", "com.acme.Hidden"),
-        classesInFocusSelected = listOf("com.acme.Foo"),
-        hiddenClassesSelected = listOf("com.acme.Hidden"),
-        hiddenContainers = listOf("ExtLib"),
-        targetPumlFile = "n/a",
-        showPackages = ShowPackages.NONE,
-        hiddenContainersSelected = emptyList(),
-        hiddenClasses = emptyList(),
-      ),
-      projectName = "Test",
-      moduleName = "test",
-      classPaths = emptySet(),
-      renderJob = RenderJob(
-        RenderJob.ClassDiagramParams(
-          projectDir = "n/a",
+class ClassTreePanelTest :
+    StringSpec({
+      fun sampleJob(): IdeaRenderJob {
+        return IdeaRenderJob(
+            optionPanelState =
+                OptionPanelState(
+                    classesInFocus = listOf("com.acme.Foo", "com.acme.Bar", "com.acme.Hidden"),
+                    classesInFocusSelected = listOf("com.acme.Foo"),
+                    hiddenClassesSelected = listOf("com.acme.Hidden"),
+                    hiddenContainers = listOf("ExtLib"),
+                    targetPumlFile = "n/a",
+                    showPackages = ShowPackages.NONE,
+                    hiddenContainersSelected = emptyList(),
+                    hiddenClasses = emptyList(),
+                ),
+            projectName = "Test",
+            moduleName = "test",
+            classPaths = emptySet(),
+            renderJob =
+                RenderJob(
+                    RenderJob.ClassDiagramParams(
+                        projectDir = "n/a",
+                    )
+                ),
         )
-      )
-    )
-  }
+      }
 
-  "should build tree with given entries" {
-    val panel = ClassTreePanel(sampleJob()) {}
-    panel.containerEntries.map { it.name } shouldContainExactly listOf("Source Classes", "ExtLib")
-    panel.getClassesToAnalyze() shouldContainExactly listOf("com.acme.Foo")
-  }
+      "should build tree with given entries" {
+        val panel =
+            ClassTreePanel(
+                sampleJob(),
+            ) {}
+        panel.containerEntries.map { it.name } shouldContainExactly
+            listOf("Source Classes", "ExtLib")
+        panel.getClassesToAnalyze() shouldContainExactly listOf("com.acme.Foo")
+      }
 
-  "toggleEntryFromDiagram should change visibility" {
-    var changed = false
-    val panel = ClassTreePanel(sampleJob()) { changed = true }
+      "toggleEntryFromDiagram should change visibility" {
+        var changed = false
+        val panel = ClassTreePanel(sampleJob()) { changed = true }
 
-    panel.toggleEntryFromDiagram("Bar")
+        panel.toggleEntryFromDiagram("Bar")
 
-    val bar = panel.containerEntries
-      .flatMap { it.packages }
-      .flatMap { it.classes }
-      .first { it.name.endsWith(".Bar") }
+        val bar =
+            panel.containerEntries
+                .flatMap { it.packages }
+                .flatMap { it.classes }
+                .first { it.name.endsWith(".Bar") }
 
-    bar.visibility shouldBe VisibilityStatus.IN_FOCUS
-    changed shouldBe true
-  }
+        bar.visibility shouldBe VisibilityStatus.IN_FOCUS
+        changed shouldBe true
+      }
 
-  "getClassesToHide should return hidden ones" {
-    val panel = ClassTreePanel(sampleJob()) {}
-    panel.getClassesToHide() shouldContainExactly listOf("com.acme.Hidden")
-  }
-})
+      "getClassesToHide should return hidden ones" {
+        val panel = ClassTreePanel(sampleJob()) {}
+        panel.getClassesToHide() shouldContainExactly listOf("com.acme.Hidden")
+      }
+    })
 
 fun main() {
   SwingUtilities.invokeLater {
@@ -73,20 +80,25 @@ fun main() {
     frame.setLocationRelativeTo(null)
 
     frame.rootPane.let { rootPane ->
-      rootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-        .put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "closeWindow")
-      rootPane.actionMap.put("closeWindow", object : AbstractAction() {
-        override fun actionPerformed(e: java.awt.event.ActionEvent?) {
-          frame.dispose()
-        }
-      })
+      rootPane
+          .getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+          .put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "closeWindow")
+      rootPane.actionMap.put(
+          "closeWindow",
+          object : AbstractAction() {
+            override fun actionPerformed(e: java.awt.event.ActionEvent?) {
+              frame.dispose()
+            }
+          },
+      )
     }
 
     frame.isVisible = true
   }
 }
 
-var jobParamsYaml = """
+var jobParamsYaml =
+    """
 projectName: "configurable-google-java-format"
 moduleName: "configurable-java-format"
 classPaths:
