@@ -2,8 +2,8 @@ package com.github.mrdolch.plantarchintellijplugin.diagram.view
 
 import com.charleskorn.kaml.Yaml
 import com.github.mrdolch.plantarchintellijplugin.app.EditorRegistry
-import com.github.mrdolch.plantarchintellijplugin.diagram.ExecPlantArch
-import com.github.mrdolch.plantarchintellijplugin.diagram.getProjectByName
+import com.github.mrdolch.plantarchintellijplugin.diagram.command.ExecPlantArch
+import com.github.mrdolch.plantarchintellijplugin.diagram.command.getProjectByName
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState

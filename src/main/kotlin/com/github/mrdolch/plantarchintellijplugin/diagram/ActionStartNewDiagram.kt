@@ -1,5 +1,7 @@
 package com.github.mrdolch.plantarchintellijplugin.diagram
 
+import com.github.mrdolch.plantarchintellijplugin.diagram.command.ExecPlantArch
+import com.github.mrdolch.plantarchintellijplugin.diagram.command.createIdeaRenderJob
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.fileEditor.FileEditorManager

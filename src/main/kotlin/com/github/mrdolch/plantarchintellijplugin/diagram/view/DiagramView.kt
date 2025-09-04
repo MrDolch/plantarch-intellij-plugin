@@ -23,7 +23,7 @@ object DiagramView {
     if (plantuml.lines().size < 5) return
 
     // remove transmission boilerplate
-    plantuml = plantuml.lines().subList(1, plantuml.lines().size - 3).joinToString("\n")
+    //    plantuml = plantuml.lines().subList(1, plantuml.lines().size - 3).joinToString("\n")
 
     if (job.optionPanelState.showPackages == ShowPackages.FLAT) {
       plantuml =

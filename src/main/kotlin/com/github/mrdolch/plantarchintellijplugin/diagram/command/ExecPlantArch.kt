@@ -1,6 +1,6 @@
-package com.github.mrdolch.plantarchintellijplugin.diagram
+package com.github.mrdolch.plantarchintellijplugin.diagram.command
 
-import com.github.mrdolch.plantarchintellijplugin.diagram.ExecPlantArch.FILE_PREFIX_DEPENDENCY_DIAGRAM
+import com.github.mrdolch.plantarchintellijplugin.diagram.command.ExecPlantArch.FILE_PREFIX_DEPENDENCY_DIAGRAM
 import com.github.mrdolch.plantarchintellijplugin.diagram.view.DiagramView
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.CapturingProcessAdapter
@@ -102,7 +102,7 @@ object ExecPlantArch {
         )
   }
 
-  fun executePlantArch(job: IdeaRenderJob): String? {
+  fun _executePlantArch(job: IdeaRenderJob): String? {
     val commandLine = createCommandLine(job)
     val doneLatch = CountDownLatch(1)
     with(OSProcessHandler(commandLine)) {
@@ -112,6 +112,19 @@ object ExecPlantArch {
       startNotify()
       doneLatch.await(90, TimeUnit.SECONDS)
       return rendererDoneListener.rawPlantUml
+    }
+  }
+
+  fun executePlantArch(job: IdeaRenderJob): String? {
+    // Factory wie bisher; *keine* Job-spezifischen Daten in @args packen (nur CP/Main/Workdir)
+    val cmdFactory: () -> GeneralCommandLine = { createCommandLine(job) }
+
+    return try {
+      PersistentSequentialPlantArchClient.render(job.renderJob, cmdFactory, timeoutSec = 90)
+          .get(90, TimeUnit.SECONDS)
+    } catch (t: Throwable) {
+      err.println("PlantArch render failed: ${t.message}")
+      null
     }
   }
 
@@ -219,7 +232,7 @@ fun Module.getClasspath(): ImmutableSet<String> {
   val plugin =
       PluginManagerCore.getPlugin(PluginId.getId("com.github.mrdolch.plantarchintellijplugin"))
   val pluginPath = plugin?.pluginPath?.toFile()
-  val jarPath = pluginPath?.resolve("lib/plantarch-0.1.17-launcher.jar")?.canonicalPath
+  val jarPath = pluginPath?.resolve("lib/plantarch-0.1.18-SNAPSHOT-launcher.jar")?.canonicalPath
   val classpath = mutableSetOf(jarPath!!)
 
   // 2. Abhängigkeiten (Libraries, andere Module)

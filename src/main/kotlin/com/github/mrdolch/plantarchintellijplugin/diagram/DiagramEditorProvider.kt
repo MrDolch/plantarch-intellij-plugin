@@ -1,5 +1,6 @@
-package com.github.mrdolch.plantarchintellijplugin.diagram.view
+package com.github.mrdolch.plantarchintellijplugin.diagram
 
+import com.github.mrdolch.plantarchintellijplugin.diagram.view.DiagramEditor
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.event.SelectionEvent
 import com.intellij.openapi.editor.event.SelectionListener
