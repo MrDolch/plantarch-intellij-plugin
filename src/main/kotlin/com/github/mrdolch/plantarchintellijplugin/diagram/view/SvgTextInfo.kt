@@ -1,9 +1,5 @@
 package com.github.mrdolch.plantarchintellijplugin.diagram.view
 
-import org.w3c.dom.Element
-import org.w3c.dom.Node
-import org.w3c.dom.NodeList
-import org.xml.sax.InputSource
 import java.awt.Rectangle
 import java.io.StringReader
 import javax.xml.XMLConstants
@@ -11,6 +7,11 @@ import javax.xml.namespace.NamespaceContext
 import javax.xml.parsers.DocumentBuilderFactory
 import javax.xml.xpath.XPathConstants
 import javax.xml.xpath.XPathFactory
+import kotlin.math.max
+import org.w3c.dom.Element
+import org.w3c.dom.Node
+import org.w3c.dom.NodeList
+import org.xml.sax.InputSource
 
 data class SvgTextInfo(
     val text: String,
@@ -19,7 +20,7 @@ data class SvgTextInfo(
     val w: Double,
     val h: Double,
 ) {
-  fun asEntry() = text to Rectangle(x.toInt(), y.toInt(), w.toInt(), h.toInt())
+  fun asEntry() = text to Rectangle(x.toInt(), y.toInt(), max(1.0, w).toInt(), max(1.0, h).toInt())
 }
 
 fun collectSvgTexts(svg: String): List<SvgTextInfo> {
@@ -61,9 +62,14 @@ fun collectSvgTexts(svg: String): List<SvgTextInfo> {
   fun parseFirstNumber(listOrNull: String?): Double? {
     val s = listOrNull?.trim() ?: return null
     val token = s.split(Regex("[,\\s]+")).firstOrNull() ?: return null
-    // Strip evtl. Einheiten wie "px"
     val num = token.replace(Regex("[a-zA-Z%]+$"), "")
     return num.toDoubleOrNull()
+  }
+
+  fun estimateWidth(text: String, fontSize: Double): Double {
+    // Grobe Schätzung, wenn kein textLength vorhanden ist.
+    // Erfahrungswert: ~0.6 * fontSize pro Zeichen (Monospace-artig).
+    return text.length * fontSize * 0.6
   }
 
   val out = ArrayList<SvgTextInfo>(nodes.length)
@@ -72,12 +78,32 @@ fun collectSvgTexts(svg: String): List<SvgTextInfo> {
     val text = el.textContent.orEmpty().trim()
     if (text.isEmpty()) continue
 
+    // x & y – inkl. Erben vom <text/> und Berücksichtigen von dy
     val x = parseFirstNumber(el.attr("x") ?: el.findAttrUp("x")) ?: continue
-    val y = parseFirstNumber(el.attr("y") ?: el.findAttrUp("y")) ?: continue
-    val w = parseFirstNumber(el.attr("textLength")) ?: continue
-    val h = parseFirstNumber(el.attr("font-size")) ?: continue
 
-    out += SvgTextInfo(text = text, x = x, y = y - h, w = w, h = h)
+    val rawY = parseFirstNumber(el.attr("y") ?: el.findAttrUp("y"))
+    val dy = parseFirstNumber(el.attr("dy")) ?: 0.0
+    val yBaseline =
+        when {
+          rawY != null -> rawY + dy
+          else -> continue
+        }
+
+    // font-size kann (häufig bei <tspan>) fehlen -> nach oben erben; sonst 14 als Fallback
+    // (PlantUML-Default)
+    val fontSize = parseFirstNumber(el.attr("font-size") ?: el.findAttrUp("font-size")) ?: 14.0
+
+    // textLength kann fehlen -> nach oben erben oder schätzen
+    val textLength =
+        parseFirstNumber(el.attr("textLength") ?: el.findAttrUp("textLength"))
+            ?: estimateWidth(text, fontSize)
+
+    // Die Y-Koordinate in SVG-Texten ist die Baseline -> für Top-Left die Höhe abziehen
+    val h = fontSize
+    val w = textLength
+    val yTop = yBaseline - h
+
+    out += SvgTextInfo(text = text, x = x, y = yTop, w = w, h = h)
   }
   return out
 }

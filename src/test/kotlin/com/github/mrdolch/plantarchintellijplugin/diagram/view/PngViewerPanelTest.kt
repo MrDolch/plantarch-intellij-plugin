@@ -1,14 +1,16 @@
 package com.github.mrdolch.plantarchintellijplugin.diagram.view
 
+import com.github.mrdolch.plantarchintellijplugin.asm.ShowPackages
+import com.github.mrdolch.plantarchintellijplugin.asm.UseByMethodNames
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
-import tech.dolch.plantarch.cmd.OptionPanelState
-import tech.dolch.plantarch.cmd.ShowPackages
 
-class PngViewerPanelTest : StringSpec({
-  val testee = PngViewerPanel(
-    """@startuml
+class PngViewerPanelTest :
+    StringSpec({
+      val testee =
+          PngViewerPanel(
+              """@startuml
 
 
 class com.github.mrdolch.plantarchintellijplugin.diagram.view.DiagramEditor #ccc
@@ -44,22 +46,27 @@ skinparam linetype polyline
 !pragma layout smetana
 
 @enduml""",
-    OptionPanelState(
-      "",
-      ShowPackages.NONE,
-      emptyList(),
-      emptyList(),
-      emptyList(),
-      emptyList(),
-      emptyList(),
-      emptyList()
-    )
-  ) {}
+              OptionPanelState(
+                  projectName = "Test",
+                  moduleName = "test",
+                  libraryPaths = emptySet(),
+                  classPaths = emptySet(),
+                  classesInFocus = listOf("com.acme.Foo", "com.acme.Bar", "com.acme.Hidden"),
+                  classesInFocusSelected = listOf("com.acme.Foo"),
+                  hiddenClassesSelected = listOf("com.acme.Hidden"),
+                  hiddenContainers = listOf("ExtLib"),
+                  targetPumlFile = "n/a",
+                  showPackages = ShowPackages.NONE,
+                  hiddenContainersSelected = emptyList(),
+                  hiddenClasses = emptyList(),
+                  title = "Title",
+                  description = "Description",
+                  showUseByMethodNames = UseByMethodNames.NONE,
+              ),
+          ) {}
 
-  "should build panel based on puml" {
-
-    testee.svg shouldNotContain "Dot executable does not exist"
-    testee.svg shouldContain "PngViewerPanelKt"
-  }
-
-})
+      "should build panel based on puml" {
+        testee.svg shouldNotContain "Dot executable does not exist"
+        testee.svg shouldContain "PngViewerPanelKt"
+      }
+    })

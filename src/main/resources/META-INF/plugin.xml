@@ -10,11 +10,14 @@
 
     <actions>
         <action id="PlantArch.ShowDiagram"
-                class="com.github.mrdolch.plantarchintellijplugin.diagram.ActionStartNewDiagram"
+                class="com.github.mrdolch.plantarchintellijplugin.app.ActionStartNewDiagram"
                 text="Render PlantArch Diagram"/>
     </actions>
     <extensions defaultExtensionNs="com.intellij">
         <fileEditorProvider
                 implementation="com.github.mrdolch.plantarchintellijplugin.diagram.view.DiagramEditorProvider"/>
+        <projectConfigurable
+                displayName="PlantArch-Live-Analyzer Settings"
+                instance="com.github.mrdolch.plantarchintellijplugin.configuration.ConfigurationPanel"/>
     </extensions>
 </idea-plugin>

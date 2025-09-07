@@ -1,17 +1,14 @@
 package com.github.mrdolch.plantarchintellijplugin.diagram.view
 
-import com.charleskorn.kaml.Yaml
-import com.github.mrdolch.plantarchintellijplugin.app.EditorRegistry
-import com.github.mrdolch.plantarchintellijplugin.diagram.ExecPlantArch
-import com.github.mrdolch.plantarchintellijplugin.diagram.getProjectByName
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorState
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.ProjectManager
+import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.util.Computable
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.UserDataHolderBase
@@ -20,7 +17,6 @@ import com.intellij.openapi.vfs.readText
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.search.searches.AllClassesSearch
 import com.intellij.util.concurrency.AppExecutorUtil
-import tech.dolch.plantarch.cmd.IdeaRenderJob
 import java.awt.BorderLayout
 import java.beans.PropertyChangeListener
 import javax.swing.JComponent
@@ -29,29 +25,39 @@ import javax.swing.ScrollPaneConstants
 import javax.swing.border.TitledBorder
 
 class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase(), FileEditor {
+  companion object {
+    const val INITIAL_PUML = "@startuml\ntitle Rendering...\n@enduml\n"
+  }
 
   private val panel = JPanel(BorderLayout())
-  private var jobParams: IdeaRenderJob
-  private val umlOptionsPanel: UmlOptionsPanel
+  private var optionPanelState: OptionPanelState
+  private val umlOptionsPanel: OptionsPanel
   private val classTreePanel: ClassTreePanel
   private val pngViewerPanel: PngViewerPanel
   private val disposable = Disposer.newDisposable()
+  private val project: Project
 
   init {
-    EditorRegistry.registerEditor(diagramFile, this)
     val diagramContent = String(diagramFile.contentsToByteArray())
-    jobParams = getJobParams(diagramContent)
+    optionPanelState = getOptionPanelState(diagramContent)
+    project = getProjectByName(optionPanelState.projectName)
     pngViewerPanel =
-        PngViewerPanel(diagramFile.readText(), jobParams.optionPanelState) {
-          toggleEntryFromDiagram(it)
-        }
-    umlOptionsPanel = UmlOptionsPanel(jobParams) { updateDiagram() }
-    val project = getProjectByName(jobParams.projectName)
+        PngViewerPanel(diagramFile.readText(), optionPanelState) { toggleEntryFromDiagram(it) }
+    umlOptionsPanel = OptionsPanel(optionPanelState) { renderDiagram() }
     classTreePanel =
-        ClassTreePanel(jobParams) {
-          if (umlOptionsPanel.autoRenderDiagram.isSelected) updateDiagram()
+        ClassTreePanel(optionPanelState) {
+          if (umlOptionsPanel.autoRenderDiagram.isSelected) renderDiagram()
         }
-    loadDataAsync(jobParams, project, this, classTreePanel)
+    loadDataAsync(optionPanelState, project, this, classTreePanel)
+
+    if (diagramContent.startsWith(INITIAL_PUML)) {
+      renderDiagram()
+    } else {
+      pngViewerPanel.updatePanel(
+          diagramContent.substringBefore(OptionPanelState.MARKER_STARTCONFIG),
+          optionPanelState,
+      )
+    }
 
     val optionsPanel = JPanel(BorderLayout())
     optionsPanel.add(umlOptionsPanel, BorderLayout.NORTH)
@@ -72,8 +78,11 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
     )
   }
 
+  fun getProjectByName(projectName: String) =
+      ProjectManager.getInstance().openProjects.first { it.name == projectName }
+
   private fun loadDataAsync(
-      jobParams: IdeaRenderJob,
+      jobParams: OptionPanelState,
       project: Project,
       disposable: Disposable,
       classTreePanel: ClassTreePanel,
@@ -83,7 +92,7 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
         .expireWith(disposable)
         .finishOnUiThread(ModalityState.any()) { classNames ->
           classTreePanel.allQualifiedClassNames = classNames
-          classTreePanel.updatePanel(jobParams)
+          classTreePanel.initClassTree(jobParams)
         }
         .submit(AppExecutorUtil.getAppExecutorService())
   }
@@ -92,40 +101,34 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
       DumbService.getInstance(project)
           .runReadActionInSmartMode(
               Computable {
+                val index = ProjectFileIndex.getInstance(project)
                 AllClassesSearch.search(GlobalSearchScope.projectScope(project), project)
                     .filter { psiClass -> psiClass.containingClass == null }
+                    .filter { psiClass ->
+                      psiClass.containingFile?.virtualFile?.let {
+                        !index.isInTestSourceContent(it)
+                      } == true
+                    }
                     .mapNotNull { it.qualifiedName }
                     .sorted()
               }
           )
 
-  private fun getJobParams(diagramContent: String): IdeaRenderJob {
-    val content = diagramContent.lines()
-    val configYaml =
-        content.subList(content.indexOf(MARKER_STARTCONFIG) + 1, content.indexOf(MARKER_ENDCONFIG))
-    return Yaml.default.decodeFromString(IdeaRenderJob.serializer(), configYaml.joinToString("\n"))
-  }
+  private fun getOptionPanelState(diagramContent: String): OptionPanelState =
+      OptionPanelState.fromYaml(
+          diagramContent
+              .substringAfter(OptionPanelState.MARKER_STARTCONFIG)
+              .substringBefore(OptionPanelState.MARKER_ENDCONFIG)
+      )
 
-  fun updateDiagram() {
-    jobParams.renderJob.classDiagrams.let {
-      it.classesToAnalyze = classTreePanel.getClassesToAnalyze()
-      it.packagesToAnalyze = classTreePanel.getPackagesToAnalyze()
-      it.containersToHide = classTreePanel.getContainersToHide()
-      it.classesToHide = classTreePanel.getClassesToHide()
-      it.showUseByMethodNames = umlOptionsPanel.getShowUseByMethodNames()
-      it.title = umlOptionsPanel.getTitle()
-      it.description = umlOptionsPanel.getDescription()
+  fun renderDiagram() {
+    ExecPlantArch.runAnalyzerBackgroundTask(project, optionPanelState, true) { result ->
+      optionPanelState.hiddenContainers = result.containersInDiagram.toList()
+      optionPanelState.hiddenClasses = result.classesInDiagram.toList()
+      pngViewerPanel.updatePanel(result.plantUml, optionPanelState)
+      //      umlOptionsPanel.updateFields(optionPanelState)
+      classTreePanel.addNewLibraryEntries(result)
     }
-    jobParams.optionPanelState.showPackages = umlOptionsPanel.getShowPackages()
-
-    ExecPlantArch.runAnalyzerBackgroundTask(jobParams, false)
-  }
-
-  fun updateFields(diagramContent: String) {
-    jobParams = getJobParams(diagramContent)
-    pngViewerPanel.updatePanel(diagramContent, jobParams.optionPanelState)
-    umlOptionsPanel.updateFields(jobParams)
-    ApplicationManager.getApplication().invokeLater { classTreePanel.updatePanel(jobParams) }
   }
 
   fun toggleEntryFromDiagram(selectedText: String) {
