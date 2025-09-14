@@ -206,7 +206,7 @@ object Asm {
                   val methods = klasse.methods.sorted().distinct().joinToString("") { "    $it\n" }
                   if (methods.isEmpty()) "" else " {\n$fields    ---\n$methods}"
                 } else ""
-            "${klasse.klassenart.umlTyp} ${klasse.toNameAsId(job.showPackages)}${klasse.klassenart.stereotyp}<<inFocus>>$marker$body"
+            "${klasse.klassenart.umlTyp} ${klasse.toNameAsId(job.showPackages)}<<inFocus>>$marker${klasse.klassenart.stereotyp}$body"
           } else {
             val members =
                 edgesInDiagram
@@ -227,7 +227,7 @@ object Asm {
             val body =
                 if (members.isEmpty() || job.showUseByMethodNames != UseByMethodNames.DEFINITION) ""
                 else " {\n$fields    ---\n$methods}"
-            "${klasse.klassenart.umlTyp} ${klasse.toNameAsId(job.showPackages)}${klasse.klassenart.stereotyp}$marker$body"
+            "${klasse.klassenart.umlTyp} ${klasse.toNameAsId(job.showPackages)}$marker${klasse.klassenart.stereotyp}$body"
           }
         }
         .forEach { uml.appendLine(it) }

@@ -229,7 +229,7 @@ class ClassDependencyCollector(private val edgesOut: MutableSet<Edge>) :
     return containers
         .computeIfAbsent(container) { mutableMapOf() }
         .computeIfAbsent(fullname) { Klasse(container, fullname, klassenart) }
-        .apply { if (access > 0) this.klassenart = klassenart }
+        .apply { if (access > 0 && !internal.contains("$")) this.klassenart = klassenart }
   }
 
   private fun toKlassenart(access: Int): Klassenart =

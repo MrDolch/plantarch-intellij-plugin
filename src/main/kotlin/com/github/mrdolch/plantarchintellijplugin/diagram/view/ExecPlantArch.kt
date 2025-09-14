@@ -3,6 +3,8 @@ package com.github.mrdolch.plantarchintellijplugin.diagram.view
 import com.github.mrdolch.plantarchintellijplugin.asm.Asm
 import com.github.mrdolch.plantarchintellijplugin.asm.Parameters
 import com.github.mrdolch.plantarchintellijplugin.asm.Result
+import com.intellij.notification.NotificationGroupManager
+import com.intellij.notification.NotificationType
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.compiler.CompilerManager
 import com.intellij.openapi.progress.ProgressIndicator
@@ -47,8 +49,13 @@ object ExecPlantArch {
                     indicator.text = "Compiling..."
                     val success = compileSynchronously(project)
                     if (!success) {
-                      // Warning did not compile
-                      println("WARNING: Did not compile fully.")
+                      NotificationGroupManager.getInstance()
+                        .getNotificationGroup("PlantArch")
+                        .createNotification(
+                          "Build failed",
+                          "Project must be compiled before analysis.",
+                          NotificationType.ERROR
+                        ).notify(project)
                     }
                   }
 
@@ -67,7 +74,7 @@ object ExecPlantArch {
                   if (TaskLock.isWaiting.compareAndSet(true, false)) {
                     TaskLock.pendingJob?.let {
                       TaskLock.pendingJob = null
-                      runAnalyzerBackgroundTask(project, optionPanelState, false, onResult)
+                      runAnalyzerBackgroundTask(project, optionPanelState, true, onResult)
                     }
                   }
                 }

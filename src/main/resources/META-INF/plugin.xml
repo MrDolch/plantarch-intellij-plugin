@@ -19,5 +19,10 @@
         <projectConfigurable
                 displayName="PlantArch-Live-Analyzer Settings"
                 instance="com.github.mrdolch.plantarchintellijplugin.configuration.ConfigurationPanel"/>
+        <notificationGroup
+                id="PlantArch"
+                displayType="BALLOON"
+                isLogByDefault="true"
+                key="notification.group.plantarch"/>
     </extensions>
 </idea-plugin>

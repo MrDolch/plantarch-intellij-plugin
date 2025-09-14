@@ -43,15 +43,15 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
     project = getProjectByName(optionPanelState.projectName)
     pngViewerPanel =
         PngViewerPanel(diagramFile.readText(), optionPanelState) { toggleEntryFromDiagram(it) }
-    umlOptionsPanel = OptionsPanel(optionPanelState) { renderDiagram() }
+    umlOptionsPanel = OptionsPanel(optionPanelState) { renderDiagram(true) }
     classTreePanel =
         ClassTreePanel(optionPanelState) {
-          if (umlOptionsPanel.autoRenderDiagram.isSelected) renderDiagram()
+          if (umlOptionsPanel.autoRenderDiagram.isSelected) renderDiagram(true)
         }
     loadDataAsync(optionPanelState, project, this, classTreePanel)
 
     if (diagramContent.startsWith(INITIAL_PUML)) {
-      renderDiagram()
+      renderDiagram(false)
     } else {
       pngViewerPanel.updatePanel(
           diagramContent.substringBefore(OptionPanelState.MARKER_STARTCONFIG),
@@ -121,8 +121,8 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
               .substringBefore(OptionPanelState.MARKER_ENDCONFIG)
       )
 
-  fun renderDiagram() {
-    ExecPlantArch.runAnalyzerBackgroundTask(project, optionPanelState, true) { result ->
+  fun renderDiagram(skipCompile: Boolean) {
+    ExecPlantArch.runAnalyzerBackgroundTask(project, optionPanelState, skipCompile) { result ->
       optionPanelState.hiddenContainers = result.containersInDiagram.toList()
       optionPanelState.hiddenClasses = result.classesInDiagram.toList()
       pngViewerPanel.updatePanel(result.plantUml, optionPanelState)
