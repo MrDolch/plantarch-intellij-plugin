@@ -28,6 +28,8 @@ class ClassTreePanelTest :
             title = "Title",
             description = "Description",
             showUseByMethodNames = UseByMethodNames.NONE,
+            plamtumlInlineOptions = "",
+            markerClassesSelected = emptyList(),
         )
       }
 

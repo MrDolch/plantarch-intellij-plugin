@@ -30,6 +30,8 @@ class OptionPanelStateTest :
               hiddenContainersSelected = emptyList(),
               hiddenClasses = emptyList(),
               hiddenClassesSelected = emptyList(),
+              plamtumlInlineOptions = "",
+              markerClassesSelected = emptyList(),
           )
       "should serialize to yaml" {
         val yaml = testee.toYaml()

@@ -62,6 +62,8 @@ skinparam linetype polyline
                   title = "Title",
                   description = "Description",
                   showUseByMethodNames = UseByMethodNames.NONE,
+                  plamtumlInlineOptions = "",
+                  markerClassesSelected = emptyList(),
               ),
           ) {}
 

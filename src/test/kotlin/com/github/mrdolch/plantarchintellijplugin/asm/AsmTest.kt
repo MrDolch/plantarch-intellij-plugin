@@ -1,9 +1,9 @@
 package com.github.mrdolch.plantarchintellijplugin.asm
 
 import com.github.mrdolch.plantarchintellijplugin.app.ActionStartNewDiagram
-import com.github.mrdolch.plantarchintellijplugin.diagram.view.ExecPlantArch
 import com.github.mrdolch.plantarchintellijplugin.diagram.view.DiagramEditor
 import com.github.mrdolch.plantarchintellijplugin.diagram.view.DragScrollPane
+import com.github.mrdolch.plantarchintellijplugin.diagram.view.ExecPlantArch
 import io.kotest.core.spec.style.StringSpec
 import java.io.File
 import java.io.Serializable
@@ -46,6 +46,7 @@ class AsmTest :
               showUseByMethodNames = UseByMethodNames.DEFINITION,
               showPackages = ShowPackages.FLAT,
               showLibraries = true,
+              plantumlInlineOptions = "",
           )
 
       "should render UmlDiagram" {
