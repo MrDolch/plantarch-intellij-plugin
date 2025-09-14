@@ -1,10 +1,6 @@
 package com.github.mrdolch.plantarchintellijplugin.diagram.view
 
 import com.intellij.openapi.ide.CopyPasteManager
-import net.sourceforge.plantuml.FileFormat
-import net.sourceforge.plantuml.FileFormatOption
-import net.sourceforge.plantuml.SourceStringReader
-import tech.dolch.plantarch.cmd.OptionPanelState
 import java.awt.*
 import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.Transferable
@@ -20,12 +16,16 @@ import javax.swing.JMenuItem
 import javax.swing.JPanel
 import javax.swing.JPopupMenu
 import kotlin.math.max
+import net.sourceforge.plantuml.FileFormat
+import net.sourceforge.plantuml.FileFormatOption
+import net.sourceforge.plantuml.SourceStringReader
+import java.io.Serializable
 
 class PngViewerPanel(
     puml: String,
     optionPanelState: OptionPanelState,
     val onChange: (String) -> Unit,
-) : JPanel() {
+) : JPanel(), Serializable {
   private lateinit var image: BufferedImage
   lateinit var svg: String
   lateinit var puml: String
@@ -54,7 +54,7 @@ class PngViewerPanel(
   }
 
   fun updatePanel(puml: String, optionPanelState: OptionPanelState) {
-    this.puml = puml.substring(puml.indexOf("@startuml\n"), puml.indexOf("@enduml\n") + 8)
+    this.puml = puml
     svg = renderSvg(puml)
     setPlantumlLimitSize()
     image = renderPng(puml)
@@ -66,6 +66,8 @@ class PngViewerPanel(
                   optionPanelState.hiddenContainers.contains(it.text)
             }
             .associate { it.asEntry() }
+    invalidate()
+    updateUI()
   }
 
   private fun setPlantumlLimitSize() {
@@ -150,3 +152,4 @@ private class SvgTransferable(private val svg: String) : Transferable {
       if (!isDataFlavorSupported(flavor)) ""
       else ByteArrayInputStream(svg.toByteArray(StandardCharsets.UTF_8))
 }
+

@@ -1,40 +1,35 @@
 package com.github.mrdolch.plantarchintellijplugin.diagram.view
 
-import com.charleskorn.kaml.Yaml
+import com.github.mrdolch.plantarchintellijplugin.asm.ShowPackages
+import com.github.mrdolch.plantarchintellijplugin.asm.UseByMethodNames
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
-import tech.dolch.plantarch.cmd.IdeaRenderJob
-import tech.dolch.plantarch.cmd.OptionPanelState
-import tech.dolch.plantarch.cmd.RenderJob
-import tech.dolch.plantarch.cmd.ShowPackages
+import java.awt.event.ActionEvent
 import java.awt.event.KeyEvent
 import javax.swing.*
 
 class ClassTreePanelTest :
     StringSpec({
-      fun sampleJob(): IdeaRenderJob {
-        return IdeaRenderJob(
-            optionPanelState =
-                OptionPanelState(
-                    classesInFocus = listOf("com.acme.Foo", "com.acme.Bar", "com.acme.Hidden"),
-                    classesInFocusSelected = listOf("com.acme.Foo"),
-                    hiddenClassesSelected = listOf("com.acme.Hidden"),
-                    hiddenContainers = listOf("ExtLib"),
-                    targetPumlFile = "n/a",
-                    showPackages = ShowPackages.NONE,
-                    hiddenContainersSelected = emptyList(),
-                    hiddenClasses = emptyList(),
-                ),
+      fun sampleJob(): OptionPanelState {
+        return OptionPanelState(
             projectName = "Test",
             moduleName = "test",
+            libraryPaths = emptySet(),
             classPaths = emptySet(),
-            renderJob =
-                RenderJob(
-                    RenderJob.ClassDiagramParams(
-                        projectDir = "n/a",
-                    )
-                ),
+            classesInFocus = listOf("com.acme.Foo", "com.acme.Bar", "com.acme.Hidden"),
+            classesInFocusSelected = listOf("com.acme.Foo"),
+            hiddenClassesSelected = listOf("com.acme.Hidden"),
+            hiddenContainers = listOf("ExtLib"),
+            targetPumlFile = "n/a",
+            showPackages = ShowPackages.NONE,
+            hiddenContainersSelected = emptyList(),
+            hiddenClasses = emptyList(),
+            title = "Title",
+            description = "Description",
+            showUseByMethodNames = UseByMethodNames.NONE,
+            plamtumlInlineOptions = "",
+            markerClassesSelected = emptyList(),
         )
       }
 
@@ -74,7 +69,7 @@ fun main() {
   SwingUtilities.invokeLater {
     val frame = JFrame("Diagram Filter Panel Demo")
     frame.defaultCloseOperation = JFrame.EXIT_ON_CLOSE
-    val jobParams = Yaml.default.decodeFromString(IdeaRenderJob.serializer(), jobParamsYaml)
+    val jobParams = OptionPanelState.fromYaml(jobParamsYaml)
     frame.contentPane.add(ClassTreePanel(jobParams, { m -> JTree(m) }) {})
     frame.setSize(400, 600)
     frame.setLocationRelativeTo(null)
@@ -86,7 +81,7 @@ fun main() {
       rootPane.actionMap.put(
           "closeWindow",
           object : AbstractAction() {
-            override fun actionPerformed(e: java.awt.event.ActionEvent?) {
+            override fun actionPerformed(e: ActionEvent?) {
               frame.dispose()
             }
           },
@@ -101,8 +96,7 @@ var jobParamsYaml =
     """
 projectName: "configurable-google-java-format"
 moduleName: "configurable-java-format"
-classPaths:
-- "/home/chris/IdeaProjects/plantarch-intellij-plugin/build/idea-sandbox/IC-2024.2.5/plugins/plantarch-intellij-plugin/lib/plantarch-0.1.13-SNAPSHOT-launcher.jar"
+libraryPaths:
 - "/home/chris/.jdks/temurin-21.0.5!/java.base"
 - "/home/chris/.jdks/temurin-21.0.5!/java.compiler"
 - "/home/chris/.jdks/temurin-21.0.5!/java.datatransfer"
@@ -199,60 +193,21 @@ classPaths:
 - "/home/chris/.m2/repository/com/google/errorprone/error_prone_annotations/2.37.0/error_prone_annotations-2.37.0.jar"
 - "/home/chris/.m2/repository/com/google/auto/value/auto-value-annotations/1.11.0/auto-value-annotations-1.11.0.jar"
 - "/home/chris/.m2/repository/com/google/auto/service/auto-service-annotations/1.1.1/auto-service-annotations-1.1.1.jar"
-renderJob:
-  classDiagrams:
-    title: "Dependencies of InputOutput"
-    description: ""
-    classesToAnalyze:
-    - "com.google.googlejavaformat.InputOutput"
-    - "com.google.googlejavaformat.Newlines"
-    containersToHide:
-    - "jrt"
-    classesToHide:
-    - "com.google.googlejavaformat.Input"
-    showUseByMethodNames: "NONE"
-    projectDir: "/home/chris/IdeaProjects/configurable-google-java-format/core"
-    moduleDirs:
-    - "/home/chris/IdeaProjects/configurable-google-java-format"
-    - "/home/chris/IdeaProjects/configurable-google-java-format-maven-plugin"
-    - "/home/chris/IdeaProjects/configurable-google-java-format/core"
-optionPanelState:
-  targetPumlFile: "/tmp/dependency-diagram-4043177628559265698.puml"
-  showPackages: "NESTED"
-  classesInFocus:
-  - "com.google.googlejavaformat.Input"
-  - "com.google.googlejavaformat.InputOutput"
-  - "com.google.googlejavaformat.Newlines"
-  - "com.google.googlejavaformat.Output"
-  - "com.google.googlejavaformat.java.Formatter"
-  - "com.google.googlejavaformat.java.ImportOrderer"
-  - "com.google.googlejavaformat.java.JavaCommentsHelper"
-  - "com.google.googlejavaformat.java.JavaInput"
-  - "com.google.googlejavaformat.java.JavaInputAstVisitor"
-  - "com.google.googlejavaformat.java.JavaOutput"
-  - "com.google.googlejavaformat.java.RemoveUnusedImports"
-  - "com.google.googlejavaformat.java.StringWrapper"
-  classesInFocusSelected:
-  - "com.google.googlejavaformat.InputOutput"
-  - "com.google.googlejavaformat.Newlines"
-  hiddenContainers:
-  - "guava-33.4.0-jre.jar"
-  - "jrt"
-  hiddenContainersSelected:
-  - "jrt"
-  hiddenClasses:
-  - "com.google.googlejavaformat.Input"
-  - "com.google.googlejavaformat.InputOutput"
-  - "com.google.googlejavaformat.Newlines"
-  - "com.google.googlejavaformat.Output"
-  - "com.google.googlejavaformat.java.Formatter"
-  - "com.google.googlejavaformat.java.ImportOrderer"
-  - "com.google.googlejavaformat.java.JavaCommentsHelper"
-  - "com.google.googlejavaformat.java.JavaInput"
-  - "com.google.googlejavaformat.java.JavaInputAstVisitor"
-  - "com.google.googlejavaformat.java.JavaOutput"
-  - "com.google.googlejavaformat.java.RemoveUnusedImports"
-  - "com.google.googlejavaformat.java.StringWrapper"
-  hiddenClassesSelected:
-  - "com.google.googlejavaformat.Input"
+classPaths:
+- "/home/chris/IdeaProjects/configurable-google-java-format-maven-plugin/target/classes"
+- "/home/chris/IdeaProjects/configurable-google-java-format/core/target/classes"
+targetPumlFile: "/tmp/dependency-diagram-11761671643623754960.plantarch"
+title: "Details of com.google.googlejavaformat.InputOutput"
+description: "Dependencies of com.google.googlejavaformat.InputOutput"
+showPackages: "NESTED"
+showUseByMethodNames: "ARROW"
+classesInFocus: []
+classesInFocusSelected:
+- "com.google.googlejavaformat.InputOutput"
+hiddenContainers: []
+hiddenContainersSelected:
+- "guava-33.4.8-jre.jar"
+- "jrt.jar"
+hiddenClasses: []
+hiddenClassesSelected: []
 """

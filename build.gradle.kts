@@ -8,6 +8,7 @@ plugins {
   alias(libs.plugins.changelog) // Gradle Changelog Plugin
   alias(libs.plugins.qodana) // Gradle Qodana Plugin
   alias(libs.plugins.kover) // Gradle Kover Plugin
+  kotlin("plugin.serialization") version "2.0.20"
   id("org.sonarqube") version "6.2.0.5505"
   id("checkstyle")
 }
@@ -37,9 +38,13 @@ dependencies {
   testImplementation("io.kotest:kotest-assertions-core:5.9.1")
   testImplementation("io.kotest:kotest-framework-datatest:5.9.1")
 
-  implementation("io.github.mrdolch:plantarch:0.1.17") { artifact { classifier = "launcher" } }
-  implementation("com.charleskorn.kaml:kaml:0.92.0")
+  implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3")
+  implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+  implementation("com.charleskorn.kaml:kaml:0.61.0")
   implementation("net.sourceforge.plantuml:plantuml:1.2025.4")
+
+  implementation("org.ow2.asm:asm:9.7.1")
+  implementation("org.ow2.asm:asm-commons:9.7.1")
 
   // IntelliJ Platform Gradle Plugin Dependencies Extension - read more:
   // https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html

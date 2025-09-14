@@ -4,6 +4,21 @@
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-09-14
+
+### Main Changes
+
+- The Class Analyzer has been refactored to improve accuracy and maintainability.
+- UML generation has been revised to produce clearer and more consistent diagrams.
+- Overall performance has been significantly improved, resulting in faster processing.
+- Extensive configuration options have been added to support a wide range of usage scenarios.
+
+### New Features
+
+- Marker classes have been introduced to provide a flexible way of tagging and categorizing elements.
+- Stylesheets for markers allow customized visual representations within the generated diagrams.
+- A global configuration has been added to centralize and simplify the management of settings across projects.
+
 ## [0.1.7] - 2025-07-21
 
 - Render PNGs ourselves

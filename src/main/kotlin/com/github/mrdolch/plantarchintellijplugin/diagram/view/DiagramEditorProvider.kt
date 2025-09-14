@@ -10,8 +10,14 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 
 class DiagramEditorProvider : FileEditorProvider {
+  companion object{
+    const val FILE_EXTENSION = "plantarch"
+    const val FILE_PREFIX_DEPENDENCY_DIAGRAM = "dependency-diagram-"
+
+  }
+
   override fun accept(project: Project, file: VirtualFile) =
-      file.extension == "puml" && file.name.startsWith("dependency-diagram-")
+      file.extension == FILE_EXTENSION && file.name.startsWith("dependency-diagram-")
 
   override fun createEditor(project: Project, file: VirtualFile): DiagramEditor {
     val diagramEditor = DiagramEditor(file)
