@@ -60,7 +60,7 @@ class AsmTest :
         val puml = Asm.toPlantUml(classDeps, job).plantUml
 
         println(puml)
-        File(job.targetPumlFile).writer().use { it.write(puml) }
+        //        File(job.targetPumlFile).writer().use { it.write(puml) }
       }
     })
 
