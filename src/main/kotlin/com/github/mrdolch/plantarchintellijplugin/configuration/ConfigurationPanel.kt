@@ -24,11 +24,11 @@ internal class ConfigurationPanel(private val project: Project) :
 
 
   override fun getId(): String {
-    return "external-java-formatter.settings"
+    return "plantarch-live-analyzer.settings"
   }
 
   override fun getDisplayName(): String {
-    return "External-Java-Formatter Settings"
+    return "PlantArch-Live-Analyzer Settings"
   }
 
   override fun apply() {
