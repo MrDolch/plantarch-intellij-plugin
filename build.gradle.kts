@@ -34,9 +34,9 @@ repositories {
 // https://docs.gradle.org/current/userguide/platforms.html#sub:version-catalog
 dependencies {
   // Kotest Core
-  testImplementation("io.kotest:kotest-runner-junit5:5.9.1")
-  testImplementation("io.kotest:kotest-assertions-core:5.9.1")
-  testImplementation("io.kotest:kotest-framework-datatest:5.9.1")
+  testImplementation("io.kotest:kotest-runner-junit5:6.0.3")
+  testImplementation("io.kotest:kotest-assertions-core:6.0.3")
+  testImplementation("io.kotest:kotest-framework-datatest:6.0.3")
 
   implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3")
   implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
