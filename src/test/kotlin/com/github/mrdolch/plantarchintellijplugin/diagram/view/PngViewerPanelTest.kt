@@ -9,9 +9,24 @@ import io.kotest.matchers.string.shouldNotContain
 
 class PngViewerPanelTest :
     StringSpec({
-      val testee =
-          PngViewerPanel(
-              """@startuml
+      val optionPanelState =
+          OptionPanelState(
+              projectName = "Test",
+              libraryPaths = emptySet(),
+              classPaths = emptySet(),
+              classesToAnalyze = listOf("com.acme.Foo"),
+              classesToHide = listOf("com.acme.Hidden"),
+              targetPumlFile = "n/a",
+              showPackages = ShowPackages.NONE,
+              librariesToHide = emptySet(),
+              title = "Title",
+              description = "Description",
+              showUseByMethodNames = UseByMethodNames.NONE,
+              plamtumlInlineOptions = "",
+              markerClasses = emptyList(),
+          )
+      val puml =
+          """@startuml
 
 
 class com.github.mrdolch.plantarchintellijplugin.diagram.view.DiagramEditor #ccc
@@ -21,14 +36,14 @@ class com.github.mrdolch.plantarchintellijplugin.diagram.view.PngViewerPanelKt #
 
 
 object "plantuml-1.2025.4.jar" as 2118180299 #ccc{
-    net.sourceforge.plantuml.FileFormat
-    net.sourceforge.plantuml.FileFormatOption
-    net.sourceforge.plantuml.SourceStringReader
+  net.sourceforge.plantuml.FileFormat
+  net.sourceforge.plantuml.FileFormatOption
+  net.sourceforge.plantuml.SourceStringReader
 }
 
 object "util-8.jar" as 465261062 #ccc{
-    kotlin.jvm.internal.Intrinsics
-    kotlin.text.Charsets
+  kotlin.jvm.internal.Intrinsics
+  kotlin.text.Charsets
 }
 com.github.mrdolch.plantarchintellijplugin.diagram.view.DiagramEditor ..> com.github.mrdolch.plantarchintellijplugin.diagram.view.PngViewerPanel  
 com.github.mrdolch.plantarchintellijplugin.diagram.view.PngViewerPanel ..> 2118180299
@@ -46,27 +61,14 @@ endcaption
 skinparam linetype polyline
 !pragma layout smetana
 
-@enduml""",
-              MockProject(
-                  null,
-              ) {
-              },
-              OptionPanelState(
-                  projectName = "Test",
-                  libraryPaths = emptySet(),
-                  classPaths = emptySet(),
-                  classesToAnalyze = listOf("com.acme.Foo"),
-                  classesToHide = listOf("com.acme.Hidden"),
-                  targetPumlFile = "n/a",
-                  showPackages = ShowPackages.NONE,
-                  librariesToHide = emptySet(),
-                  title = "Title",
-                  description = "Description",
-                  showUseByMethodNames = UseByMethodNames.NONE,
-                  plamtumlInlineOptions = "",
-                  markerClasses = emptyList(),
-              ),
-          ) {}
+@enduml"""
+      val testee =
+          PngViewerPanel(
+            puml,
+            MockProject(null) {},
+            OptionPanel(optionPanelState) {},
+            ClassTreePanel(optionPanelState) {},
+          ) {  }
 
       "should build panel based on puml" {
         testee.svg shouldNotContain "Dot executable does not exist"

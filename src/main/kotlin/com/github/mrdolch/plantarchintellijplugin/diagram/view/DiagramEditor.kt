@@ -29,12 +29,12 @@ import javax.swing.border.TitledBorder
 
 class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase(), FileEditor {
   companion object {
-    const val INITIAL_PUML = "@startuml\ntitle Compiling... Analyzing... Rendering...\n@enduml\n"
+    const val INITIAL_PUML = "@startuml\ntitle Compiling... Analyzing... Rendering... Interacting... \n@enduml\n"
   }
 
   private val panel = JPanel(BorderLayout())
   private val optionPanelState: OptionPanelState
-  private val optionsPanel: OptionsPanel
+  private val optionPanel: OptionPanel
   private val classTreePanel: ClassTreePanel
   private val pngViewerPanel: PngViewerPanel
   private val disposable = Disposer.newDisposable()
@@ -44,15 +44,13 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
     val diagramContent = String(diagramFile.contentsToByteArray())
     optionPanelState = getOptionPanelState(diagramContent)
     project = getProjectByName(optionPanelState.projectName)
-    pngViewerPanel =
-        PngViewerPanel(diagramFile.readText(), project, optionPanelState) {
-          toggleEntryFromDiagram(it)
-        }
-    optionsPanel = OptionsPanel(optionPanelState) { renderDiagram(true) }
+    optionPanel = OptionPanel(optionPanelState) { renderDiagram(true) }
     classTreePanel =
         ClassTreePanel(optionPanelState) {
-          if (optionsPanel.autoRenderDiagram.isSelected) renderDiagram(true)
+          if (optionPanel.autoRenderDiagram.isSelected) renderDiagram(true)
         }
+    pngViewerPanel =
+      PngViewerPanel(diagramFile.readText(), project, optionPanel, classTreePanel) {renderDiagram(true)}
     loadDataAsync(optionPanelState, project, this, classTreePanel)
 
     if (diagramContent.startsWith(INITIAL_PUML)) {
@@ -66,7 +64,7 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
     panel.add(
         DragScrollPane(
                 JPanel(BorderLayout()).apply<JPanel> {
-                  add(optionsPanel, BorderLayout.NORTH)
+                  add(optionPanel, BorderLayout.NORTH)
                   add(classTreePanel, BorderLayout.CENTER)
                 }
             )
@@ -134,13 +132,13 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
   fun renderDiagram(isUpdate: Boolean) {
     if (isUpdate) {
       // collect States from Panels
-      optionPanelState.showPackages = optionsPanel.showPackagesDropdown.selectedItem as ShowPackages
+      optionPanelState.showPackages = optionPanel.showPackagesDropdown.selectedItem as ShowPackages
       optionPanelState.showUseByMethodNames =
-          optionsPanel.showMethodNamesDropdown.selectedItem as UseByMethodNames
-      optionPanelState.title = optionsPanel.titleField.text
-      optionPanelState.description = optionsPanel.descriptionArea.text
-      optionPanelState.plamtumlInlineOptions = optionsPanel.plamtumlInlineOptionsArea.text
-      optionPanelState.markerClasses = optionsPanel.markerClassesArea.text.split("\n")
+          optionPanel.showMethodNamesDropdown.selectedItem as UseByMethodNames
+      optionPanelState.title = optionPanel.titleField.text
+      optionPanelState.description = optionPanel.descriptionArea.text
+      optionPanelState.plamtumlInlineOptions = optionPanel.plamtumlInlineOptionsArea.text
+      optionPanelState.markerClasses = optionPanel.markerClassesArea.text.split("\n")
 
       optionPanelState.classesToAnalyze = classTreePanel.getClassesToAnalyze()
       optionPanelState.classesToHide = classTreePanel.getClassesToHide()

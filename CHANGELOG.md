@@ -4,6 +4,19 @@
 
 ## [Unreleased]
 
+## [0.2.1] - 2025-09-15
+
+### Main Changes
+
+- Various bug fixes improving overall stability.
+- General code cleanup and refactoring for better maintainability.
+
+### New Features
+
+- Added new context menus for easier and more intuitive usage.
+- Introduced "Jump to Source" action, allowing direct navigation from the diagram to the corresponding class in the editor (only for classes inside the source path).
+- Enhanced diagram interaction: different context menus depending on whether you click class names or other elements.
+
 ## [0.2.0] - 2025-09-14
 
 ### Main Changes

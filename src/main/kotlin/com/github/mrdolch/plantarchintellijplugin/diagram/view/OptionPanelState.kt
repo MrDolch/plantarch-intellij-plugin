@@ -43,7 +43,7 @@ data class OptionPanelState(
     ): OptionPanelState =
         OptionPanelState(
             title = "Details of ${className.substringAfterLast(".")}",
-            description = "Dependencies of $className",
+            description = "Dependencies of\n$className",
             projectName = module.project.name,
             libraryPaths = module.project.modules.flatMap { it.getLibraryPath() }.toImmutableSet(),
             classPaths = module.project.modules.flatMap { it.getClasspath() }.toImmutableSet(),

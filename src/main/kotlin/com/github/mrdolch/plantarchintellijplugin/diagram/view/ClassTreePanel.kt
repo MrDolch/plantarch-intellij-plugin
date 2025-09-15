@@ -180,6 +180,39 @@ class ClassTreePanel(
     }
   }
 
+  fun focusClass(text: String) {
+    // toggle Containers
+    containerEntries
+        .filter { it.visibility == VisibilityStatus.MAYBE }
+        .flatMap { it.packages }
+        .flatMap { it.classes }
+        .forEach {
+          it.visibility =
+              if (it.name.endsWith(".$text") || it.name == text) VisibilityStatus.IN_FOCUS
+              else VisibilityStatus.MAYBE
+        }
+    expandSelectedBranches(tree)
+    tree.invalidate()
+    tree.updateUI()
+    onChange()
+  }
+
+  fun hideEntryFromDiagram(text: String) {
+    val visibleContainers = containerEntries.filter { it.visibility != VisibilityStatus.HIDDEN }
+    val toToggle =
+        visibleContainers
+            .flatMap { it.packages }
+            .flatMap { it.classes }
+            .filter { it.name.endsWith(".$text") || it.name == text }
+            .filter { it.visibility != VisibilityStatus.HIDDEN }
+    if (toToggle.isNotEmpty()) {
+      toToggle.forEach { it.visibility = VisibilityStatus.HIDDEN }
+      tree.invalidate()
+      tree.updateUI()
+      onChange()
+    }
+  }
+
   fun getClassesToAnalyze() =
       (containerEntries
               .flatMap { it.packages }

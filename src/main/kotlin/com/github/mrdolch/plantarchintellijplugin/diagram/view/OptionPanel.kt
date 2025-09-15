@@ -12,7 +12,7 @@ import java.awt.event.FocusAdapter
 import java.awt.event.FocusEvent
 import javax.swing.*
 
-class OptionsPanel(optionPanelState: OptionPanelState, val onChange: () -> Unit) : JPanel() {
+class OptionPanel(optionPanelState: OptionPanelState, val onChange: () -> Unit) : JPanel() {
 
   val titleField =
       JTextField(optionPanelState.title).apply {

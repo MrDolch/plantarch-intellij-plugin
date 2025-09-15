@@ -26,8 +26,9 @@ import net.sourceforge.plantuml.SourceStringReader
 class PngViewerPanel(
     puml: String,
     val project: Project,
-    val optionPanelState: OptionPanelState,
-    val onChange: (String) -> Unit,
+    val optionPanel: OptionPanel,
+    val classTreePanel: ClassTreePanel,
+    val onChange: () -> Unit,
 ) : JPanel(), Serializable {
   private lateinit var image: BufferedImage
   lateinit var svg: String
@@ -53,7 +54,9 @@ class PngViewerPanel(
     addMouseListener(
         object : MouseAdapter() {
           override fun mouseClicked(e: MouseEvent) {
-            classNameBounds.filter { it.value.contains(e.point) }.forEach { onChange(it.key) }
+            classNameBounds
+                .filter { it.value.contains(e.point) }
+                .forEach { classTreePanel.toggleEntryFromDiagram(it.key) }
           }
         }
     )
@@ -155,27 +158,29 @@ class PngViewerPanel(
   private fun buildClassPopup(className: String): JPopupMenu =
       JPopupMenu().apply {
         add(
-            JMenuItem("Jump to Source").apply {
-              addActionListener { jumpToClassInSources(project, className) } // <— NEU
-            }
-        )
-        add(
-            JMenuItem("Copy class name").apply {
-              addActionListener { CopyPasteManager.copyTextToClipboard(className) }
-            }
-        )
-        add(
-            JMenuItem("Focus class").apply {
-              addActionListener { onChange(className) } // oder eigene Fokus-Action triggern
+            JMenuItem("Focus Class").apply {
+              addActionListener { classTreePanel.focusClass(className) }
             }
         )
         addSeparator()
         add(
-            JMenuItem("Hide class").apply {
-              addActionListener {
-                // Beispiel: Klasse zu hiddenClassesSelected hinzufügen und neu rendern
-                optionPanelState.classesToHide += className
-              }
+          JMenuItem("Jump to Source").apply {
+            addActionListener { jumpToClassInSources(project, className) }
+          }
+        )
+        addSeparator()
+        add(
+          JMenuItem("Make to Marker").apply {
+            addActionListener {
+              optionPanel.markerClassesArea.text =
+                optionPanel.markerClassesArea.text.trim() + "\n" + className
+              onChange()
+            }
+          }
+        )
+        add(
+            JMenuItem("Hide Class").apply {
+              addActionListener { classTreePanel.hideEntryFromDiagram(className) }
             }
         )
       }
@@ -184,10 +189,7 @@ class PngViewerPanel(
       JPopupMenu().apply {
         add(
             JMenuItem("Hide Library").apply {
-              addActionListener {
-                // Beispiel: Klasse zu hiddenClassesSelected hinzufügen und neu rendern
-                optionPanelState.classesToHide += className
-              }
+              addActionListener { classTreePanel.toggleEntryFromDiagram(className) }
             }
         )
       }
