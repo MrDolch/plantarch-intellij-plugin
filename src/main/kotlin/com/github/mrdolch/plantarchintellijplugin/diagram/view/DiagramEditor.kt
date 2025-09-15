@@ -1,6 +1,7 @@
 package com.github.mrdolch.plantarchintellijplugin.diagram.view
 
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.fileEditor.FileEditor
@@ -26,11 +27,11 @@ import javax.swing.border.TitledBorder
 
 class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase(), FileEditor {
   companion object {
-    const val INITIAL_PUML = "@startuml\ntitle Rendering...\n@enduml\n"
+    const val INITIAL_PUML = "@startuml\ntitle Compiling... Analyzing... Rendering...\n@enduml\n"
   }
 
   private val panel = JPanel(BorderLayout())
-  private var optionPanelState: OptionPanelState
+  private val optionPanelState: OptionPanelState
   private val umlOptionsPanel: OptionsPanel
   private val classTreePanel: ClassTreePanel
   private val pngViewerPanel: PngViewerPanel
@@ -42,7 +43,9 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
     optionPanelState = getOptionPanelState(diagramContent)
     project = getProjectByName(optionPanelState.projectName)
     pngViewerPanel =
-        PngViewerPanel(diagramFile.readText(), optionPanelState) { toggleEntryFromDiagram(it) }
+        PngViewerPanel(diagramFile.readText(), project, optionPanelState) {
+          toggleEntryFromDiagram(it)
+        }
     umlOptionsPanel = OptionsPanel(optionPanelState) { renderDiagram(true) }
     classTreePanel =
         ClassTreePanel(optionPanelState) {
@@ -54,8 +57,7 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
       renderDiagram(false)
     } else {
       pngViewerPanel.updatePanel(
-          diagramContent.substringBefore(OptionPanelState.MARKER_STARTCONFIG),
-          optionPanelState,
+          diagramContent.substringBefore(OptionPanelState.MARKER_STARTCONFIG)
       )
     }
 
@@ -121,13 +123,23 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
               .substringBefore(OptionPanelState.MARKER_ENDCONFIG)
       )
 
+  private fun runOnEdt(modality: ModalityState = ModalityState.any(), action: () -> Unit) {
+    val app = ApplicationManager.getApplication()
+    if (app.isDispatchThread) action() else app.invokeLater(action, modality)
+  }
+
   fun renderDiagram(skipCompile: Boolean) {
+    // collect States from Panels
+
     ExecPlantArch.runAnalyzerBackgroundTask(project, optionPanelState, skipCompile) { result ->
+      // populate States to Panels
       optionPanelState.hiddenContainers = result.containersInDiagram.toList()
       optionPanelState.hiddenClasses = result.classesInDiagram.toList()
-      pngViewerPanel.updatePanel(result.plantUml, optionPanelState)
-      //      umlOptionsPanel.updateFields(optionPanelState)
-      classTreePanel.addNewLibraryEntries(result)
+      runOnEdt {
+        pngViewerPanel.updatePanel(result.plantUml)
+        //      umlOptionsPanel.updateFields(optionPanelState)
+        classTreePanel.addNewLibraryEntries(result)
+      }
     }
   }
 

@@ -186,9 +186,10 @@ class ClassTreePanel(
     if (toToggle.isNotEmpty()) {
       toToggle.forEach {
         it.visibility =
-            if (it.visibility == VisibilityStatus.MAYBE) VisibilityStatus.IN_FOCUS
+            if (it.visibility != VisibilityStatus.IN_FOCUS) VisibilityStatus.IN_FOCUS
             else VisibilityStatus.MAYBE
       }
+      expandSelectedBranches(tree)
       tree.invalidate()
       tree.updateUI()
       optionPanelState.classesInFocusSelected = getClassesToAnalyze()

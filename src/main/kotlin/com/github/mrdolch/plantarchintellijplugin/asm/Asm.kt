@@ -159,6 +159,7 @@ object Asm {
                     .filter { it.container != Containers.UNKNOWN }
                     .filter { !it.container.name.endsWith(".jar") })
             .filter { !job.classesToHide.contains(it.fullname) }
+            .filter { !job.markerClasses.contains(it.simplename) }
             .toSet()
     val edgesInDiagram =
         deps
@@ -171,10 +172,7 @@ object Asm {
         deps
             .flatMap { it.deps }
             .filter { klassenInDiagram.contains(it.from) }
-            .filter {
-              job.markerClasses.contains(it.to.fullname) ||
-                  job.markerClasses.contains(it.to.simplename)
-            }
+            .filter { job.markerClasses.contains(it.to.simplename) }
             .filter {
               it.kind == DepKind.IMPLEMENTS ||
                   it.kind == DepKind.EXTENDS ||
@@ -250,6 +248,7 @@ object Asm {
     edgesInDiagram
         .filter {
           it.kind == DepKind.GENERIC ||
+              it.kind == DepKind.ANNOTATION ||
               it.kind == DepKind.FIELD_TYPE ||
               it.kind == DepKind.FIELD_ACCESS ||
               it.kind == DepKind.METHOD_RET ||
@@ -276,10 +275,11 @@ object Asm {
                   .filter { it.to == edge.to }
           val toMembers = (toMethods + toFields).map { it.name }.sorted().joinToString("\\n")
           val dotted = if (toMethods.isEmpty()) "[dotted]" else ""
+          val up = if (edge.kind == DepKind.ANNOTATION) "up" else ""
           if (toMembers.isEmpty() || job.showUseByMethodNames != UseByMethodNames.ARROW)
-              "${edge.from.toId(job.showPackages)} .$dotted.> ${edge.to.toId(job.showPackages)}"
+              "${edge.from.toId(job.showPackages)} .$dotted$up.> ${edge.to.toId(job.showPackages)}"
           else
-              "${edge.from.toId(job.showPackages)} .$dotted.> ${edge.to.toId(job.showPackages)} : $toMembers"
+              "${edge.from.toId(job.showPackages)} .$dotted$up.> ${edge.to.toId(job.showPackages)} : $toMembers"
         }
         .forEach { uml.appendLine(it) }
 
