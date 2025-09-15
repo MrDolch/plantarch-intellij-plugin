@@ -1,6 +1,8 @@
 package com.github.mrdolch.plantarchintellijplugin.diagram.view
 
+import com.github.mrdolch.plantarchintellijplugin.diagram.view.JumpToSource.jumpToClassInSources
 import com.intellij.openapi.ide.CopyPasteManager
+import com.intellij.openapi.project.Project
 import java.awt.*
 import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.Transferable
@@ -10,6 +12,7 @@ import java.awt.event.MouseMotionAdapter
 import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.io.Serializable
 import java.nio.charset.StandardCharsets
 import javax.imageio.ImageIO
 import javax.swing.JMenuItem
@@ -19,11 +22,11 @@ import kotlin.math.max
 import net.sourceforge.plantuml.FileFormat
 import net.sourceforge.plantuml.FileFormatOption
 import net.sourceforge.plantuml.SourceStringReader
-import java.io.Serializable
 
 class PngViewerPanel(
     puml: String,
-    optionPanelState: OptionPanelState,
+    val project: Project,
+    val optionPanelState: OptionPanelState,
     val onChange: (String) -> Unit,
 ) : JPanel(), Serializable {
   private lateinit var image: BufferedImage
@@ -31,9 +34,12 @@ class PngViewerPanel(
   lateinit var puml: String
   private lateinit var classNameBounds: Map<String, Rectangle>
 
+  private val generalPopup by lazy { buildGeneralPopup() }
+
   init {
-    updatePanel(puml, optionPanelState)
-    installPopupMenu(this)
+    updatePanel(puml)
+    installPopupHandlers()
+
     addMouseMotionListener(
         object : MouseMotionAdapter() {
           override fun mouseMoved(e: MouseEvent) {
@@ -53,14 +59,14 @@ class PngViewerPanel(
     )
   }
 
-  fun updatePanel(puml: String, optionPanelState: OptionPanelState) {
+  fun updatePanel(puml: String) {
     this.puml = puml
     svg = renderSvg(puml)
     setPlantumlLimitSize()
     image = renderPng(puml)
     preferredSize = Dimension(image.width, image.height)
     classNameBounds =
-        collectSvgTexts(svg)
+        collectSvgClassBoxes(svg)
             .filter {
               optionPanelState.hiddenClasses.any { c -> c.endsWith(it.text) } ||
                   optionPanelState.hiddenContainers.contains(it.text)
@@ -102,38 +108,97 @@ class PngViewerPanel(
     g.drawImage(image, 0, 0, this)
   }
 
-  fun installPopupMenu(diagramPanel: JPanel) {
-    diagramPanel.componentPopupMenu =
-        JPopupMenu().apply {
-          add(
-              JMenuItem("Copy PNG Image").apply {
-                addActionListener {
-                  CopyPasteManager.getInstance().setContents(ImageTransferable(image))
+  private fun installPopupHandlers() {
+    val listener =
+        object : MouseAdapter() {
+          private fun maybeShowPopup(e: MouseEvent) {
+            if (!e.isPopupTrigger) return
+            val classUnderMouse =
+                classNameBounds.entries.firstOrNull { it.value.contains(e.point) }?.key
+            val popup =
+                when {
+                  classUnderMouse == null -> generalPopup
+                  classUnderMouse.endsWith(".jar") -> buildLibraryPopup(classUnderMouse)
+                  else -> buildClassPopup(classUnderMouse)
                 }
-              }
-          )
-          add(
-              JMenuItem("Copy PlantUml Source").apply {
-                addActionListener { CopyPasteManager.copyTextToClipboard(puml) }
-              }
-          )
-          add(
-              JMenuItem("Copy SVG Image").apply {
-                addActionListener {
-                  CopyPasteManager.getInstance().setContents(SvgTransferable(svg))
-                }
-              }
-          )
-          add(
-              JMenuItem("Copy SVG XML").apply {
-                addActionListener { CopyPasteManager.copyTextToClipboard(svg) }
-              }
-          )
+            popup.show(e.component, e.x, e.y)
+          }
+
+          override fun mousePressed(e: MouseEvent) = maybeShowPopup(e)
+
+          override fun mouseReleased(e: MouseEvent) = maybeShowPopup(e)
         }
+    addMouseListener(listener)
   }
+
+  private fun buildGeneralPopup(): JPopupMenu =
+      JPopupMenu().apply {
+        add(
+            JMenuItem("Copy PNG Image").apply {
+              addActionListener {
+                CopyPasteManager.getInstance().setContents(ImageTransferable(image))
+              }
+            }
+        )
+        add(
+            JMenuItem("Copy PlantUml Source").apply {
+              addActionListener { CopyPasteManager.copyTextToClipboard(puml) }
+            }
+        )
+        addSeparator()
+        add(
+            JMenuItem("Copy SVG Image").apply {
+              addActionListener { CopyPasteManager.getInstance().setContents(SvgTransferable(svg)) }
+            }
+        )
+        add(
+            JMenuItem("Copy SVG XML").apply {
+              addActionListener { CopyPasteManager.copyTextToClipboard(svg) }
+            }
+        )
+      }
+
+  private fun buildClassPopup(className: String): JPopupMenu =
+      JPopupMenu().apply {
+        add(
+            JMenuItem("Jump to Source").apply {
+              addActionListener { jumpToClassInSources(project, className) } // <— NEU
+            }
+        )
+        add(
+            JMenuItem("Copy class name").apply {
+              addActionListener { CopyPasteManager.copyTextToClipboard(className) }
+            }
+        )
+        add(
+            JMenuItem("Focus class").apply {
+              addActionListener { onChange(className) } // oder eigene Fokus-Action triggern
+            }
+        )
+        addSeparator()
+        add(
+            JMenuItem("Hide class").apply {
+              addActionListener {
+                // Beispiel: Klasse zu hiddenClassesSelected hinzufügen und neu rendern
+                optionPanelState.hiddenClassesSelected += className
+              }
+            }
+        )
+      }
+  private fun buildLibraryPopup(className: String): JPopupMenu =
+      JPopupMenu().apply {
+        add(
+            JMenuItem("Hide Library").apply {
+              addActionListener {
+                // Beispiel: Klasse zu hiddenClassesSelected hinzufügen und neu rendern
+                optionPanelState.hiddenClassesSelected += className
+              }
+            }
+        )
+      }
 }
 
-private class ImageTransferable(val image: Image) : Transferable {
+class ImageTransferable(val image: Image) : Transferable {
   override fun getTransferDataFlavors() = arrayOf(DataFlavor.imageFlavor)
 
   override fun isDataFlavorSupported(flavor: DataFlavor) = getTransferDataFlavors().contains(flavor)
@@ -152,4 +217,3 @@ private class SvgTransferable(private val svg: String) : Transferable {
       if (!isDataFlavorSupported(flavor)) ""
       else ByteArrayInputStream(svg.toByteArray(StandardCharsets.UTF_8))
 }
-
