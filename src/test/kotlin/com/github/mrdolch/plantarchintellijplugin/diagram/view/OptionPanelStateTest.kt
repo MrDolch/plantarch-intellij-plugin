@@ -13,7 +13,6 @@ class OptionPanelStateTest :
               title = "Details of className",
               description = "Dependencies of className",
               projectName = "module.project.name",
-              moduleName = "module.name",
               libraryPaths = setOf("libraryPaths"),
               classPaths = setOf("libraryPaths"),
               targetPumlFile =
@@ -24,14 +23,11 @@ class OptionPanelStateTest :
                       .canonicalPath,
               showPackages = ShowPackages.NESTED,
               showUseByMethodNames = UseByMethodNames.NONE,
-              classesInFocus = emptyList(),
-              classesInFocusSelected = listOf("className"),
-              hiddenContainers = emptyList(),
-              hiddenContainersSelected = emptyList(),
-              hiddenClasses = emptyList(),
-              hiddenClassesSelected = emptyList(),
+              classesToAnalyze = listOf("className"),
+              librariesToHide = emptySet(),
+              classesToHide = emptyList(),
               plamtumlInlineOptions = "",
-              markerClassesSelected = emptyList(),
+              markerClasses = emptyList(),
           )
       "should serialize to yaml" {
         val yaml = testee.toYaml()

@@ -8,6 +8,8 @@ import java.awt.BorderLayout
 import java.awt.FlowLayout
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
+import java.awt.event.FocusAdapter
+import java.awt.event.FocusEvent
 import javax.swing.*
 
 class OptionsPanel(optionPanelState: OptionPanelState, val onChange: () -> Unit) : JPanel() {
@@ -15,43 +17,24 @@ class OptionsPanel(optionPanelState: OptionPanelState, val onChange: () -> Unit)
   val titleField =
       JTextField(optionPanelState.title).apply {
         addActionListener {
-          if (optionPanelState.title != text) {
-            optionPanelState.title = text
-            if (autoRenderDiagram.isSelected) onChange()
-          }
+          if (optionPanelState.title != text && autoRenderDiagram.isSelected) onChange()
         }
       }
-  val descriptionArea =
-      textAreaWithState(optionPanelState.description) { newText ->
-        optionPanelState.description = newText
-        if (autoRenderDiagram.isSelected) onChange()
-      }
+  val descriptionArea = textAreaWithState(optionPanelState.description, onChange)
   val plamtumlInlineOptionsArea =
-      textAreaWithState(optionPanelState.plamtumlInlineOptions) { newText ->
-        optionPanelState.plamtumlInlineOptions = newText
-        if (autoRenderDiagram.isSelected) onChange()
-      }
+      textAreaWithState(optionPanelState.plamtumlInlineOptions, onChange)
   val markerClassesArea =
-      textAreaWithState(optionPanelState.markerClassesSelected.joinToString("\n")) { newText ->
-        optionPanelState.markerClassesSelected = newText.split("\n")
-        if (autoRenderDiagram.isSelected) onChange()
-      }
+      textAreaWithState(optionPanelState.markerClasses.joinToString("\n"), onChange)
 
   val showMethodNamesDropdown =
       ComboBox(UseByMethodNames.entries.toTypedArray()).apply {
         selectedItem = optionPanelState.showUseByMethodNames
-        addItemListener {
-          optionPanelState.showUseByMethodNames = selectedItem as UseByMethodNames
-          if (autoRenderDiagram.isSelected) onChange()
-        }
+        addItemListener { if (autoRenderDiagram.isSelected) onChange() }
       }
   val showPackagesDropdown =
       ComboBox(ShowPackages.entries.toTypedArray()).apply {
         selectedItem = optionPanelState.showPackages
-        addItemListener {
-          optionPanelState.showPackages = selectedItem as ShowPackages
-          if (autoRenderDiagram.isSelected) onChange()
-        }
+        addItemListener { if (autoRenderDiagram.isSelected) onChange() }
       }
   val renderDiagramButton = JButton("Render diagram").apply { addActionListener { onChange() } }
   val autoRenderDiagram = JCheckBox("Auto Render diagram", true)
@@ -102,14 +85,12 @@ class OptionsPanel(optionPanelState: OptionPanelState, val onChange: () -> Unit)
     )
   }
 
-  private fun textAreaWithState(initial: String, onChange: (String) -> Unit): JTextArea =
+  private fun textAreaWithState(initial: String, onChange: () -> Unit): JTextArea =
       JTextArea(initial, 5, 20).apply {
         addFocusListener(
-            object : java.awt.event.FocusAdapter() {
-              override fun focusLost(e: java.awt.event.FocusEvent) {
-                if (text != initial) {
-                  onChange(text)
-                }
+            object : FocusAdapter() {
+              override fun focusLost(e: FocusEvent) {
+                if (text != initial && autoRenderDiagram.isSelected) onChange()
               }
             }
         )

@@ -16,23 +16,19 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class OptionPanelState(
-    val projectName: String,
-    val moduleName: String,
-    val libraryPaths: Set<String>,
-    val classPaths: Set<String>,
-    val targetPumlFile: String,
-    var title: String,
-    var description: String,
-    var plamtumlInlineOptions: String,
-    var showPackages: ShowPackages,
-    var showUseByMethodNames: UseByMethodNames = UseByMethodNames.NONE,
-    var classesInFocus: List<String>,
-    var classesInFocusSelected: List<String>,
-    var hiddenContainers: List<String>,
-    var hiddenContainersSelected: List<String>,
-    var hiddenClasses: List<String>,
-    var hiddenClassesSelected: List<String>,
-    var markerClassesSelected: List<String>,
+  val projectName: String,
+  val libraryPaths: Set<String>,
+  val classPaths: Set<String>,
+  val targetPumlFile: String,
+  var title: String,
+  var description: String,
+  var plamtumlInlineOptions: String,
+  var showPackages: ShowPackages,
+  var showUseByMethodNames: UseByMethodNames = UseByMethodNames.NONE,
+  var classesToAnalyze: List<String>,
+  var classesToHide: List<String>,
+  var librariesToHide: Set<String>,
+  var markerClasses: List<String>,
 ) {
   fun toYaml(): String = Yaml.Companion.default.encodeToString(serializer(), this)
 
@@ -49,7 +45,6 @@ data class OptionPanelState(
             title = "Details of ${className.substringAfterLast(".")}",
             description = "Dependencies of $className",
             projectName = module.project.name,
-            moduleName = module.name,
             libraryPaths = module.project.modules.flatMap { it.getLibraryPath() }.toImmutableSet(),
             classPaths = module.project.modules.flatMap { it.getClasspath() }.toImmutableSet(),
             targetPumlFile =
@@ -58,15 +53,12 @@ data class OptionPanelState(
                         "." + DiagramEditorProvider.FILE_EXTENSION,
                     )
                     .canonicalPath,
-            classesInFocus = emptyList(),
-            classesInFocusSelected = listOf(className),
-            hiddenContainers = emptyList(),
-            hiddenContainersSelected = listOf("jrt.jar"),
-            hiddenClasses = emptyList(),
-            hiddenClassesSelected = emptyList(),
+            classesToAnalyze = listOf(className),
+            librariesToHide = setOf("jrt.jar"),
+            classesToHide = emptyList(),
             showPackages = configuration.showPackages,
             showUseByMethodNames = configuration.showMethodNames,
-            markerClassesSelected = configuration.markerClasses.split("\n"),
+            markerClasses = configuration.markerClasses.split("\n"),
             plamtumlInlineOptions = configuration.plantumlOptions,
         )
 

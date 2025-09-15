@@ -58,8 +58,6 @@ enum class Klassenart(val umlTyp: String, val stereotyp: String = "<<$umlTyp>>")
 }
 
 data class Parameters(
-    val projectName: String,
-    val moduleName: String,
     val title: String?,
     val caption: String?,
     var classesToAnalyze: List<String> = emptyList(),

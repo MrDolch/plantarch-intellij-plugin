@@ -1,5 +1,7 @@
 package com.github.mrdolch.plantarchintellijplugin.diagram.view
 
+import com.github.mrdolch.plantarchintellijplugin.asm.ShowPackages
+import com.github.mrdolch.plantarchintellijplugin.asm.UseByMethodNames
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
@@ -32,7 +34,7 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
 
   private val panel = JPanel(BorderLayout())
   private val optionPanelState: OptionPanelState
-  private val umlOptionsPanel: OptionsPanel
+  private val optionsPanel: OptionsPanel
   private val classTreePanel: ClassTreePanel
   private val pngViewerPanel: PngViewerPanel
   private val disposable = Disposer.newDisposable()
@@ -46,10 +48,10 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
         PngViewerPanel(diagramFile.readText(), project, optionPanelState) {
           toggleEntryFromDiagram(it)
         }
-    umlOptionsPanel = OptionsPanel(optionPanelState) { renderDiagram(true) }
+    optionsPanel = OptionsPanel(optionPanelState) { renderDiagram(true) }
     classTreePanel =
         ClassTreePanel(optionPanelState) {
-          if (umlOptionsPanel.autoRenderDiagram.isSelected) renderDiagram(true)
+          if (optionsPanel.autoRenderDiagram.isSelected) renderDiagram(true)
         }
     loadDataAsync(optionPanelState, project, this, classTreePanel)
 
@@ -61,13 +63,14 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
       )
     }
 
-    val optionsPanel = JPanel(BorderLayout())
-    optionsPanel.add(umlOptionsPanel, BorderLayout.NORTH)
-    optionsPanel.add(classTreePanel, BorderLayout.CENTER)
     panel.add(
-        DragScrollPane(optionsPanel).apply {
-          horizontalScrollBarPolicy = ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
-        },
+        DragScrollPane(
+                JPanel(BorderLayout()).apply<JPanel> {
+                  add(optionsPanel, BorderLayout.NORTH)
+                  add(classTreePanel, BorderLayout.CENTER)
+                }
+            )
+            .apply { horizontalScrollBarPolicy = ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER },
         BorderLayout.WEST,
     )
     panel.add(
@@ -128,13 +131,24 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
     if (app.isDispatchThread) action() else app.invokeLater(action, modality)
   }
 
-  fun renderDiagram(skipCompile: Boolean) {
-    // collect States from Panels
+  fun renderDiagram(isUpdate: Boolean) {
+    if (isUpdate) {
+      // collect States from Panels
+      optionPanelState.showPackages = optionsPanel.showPackagesDropdown.selectedItem as ShowPackages
+      optionPanelState.showUseByMethodNames =
+          optionsPanel.showMethodNamesDropdown.selectedItem as UseByMethodNames
+      optionPanelState.title = optionsPanel.titleField.text
+      optionPanelState.description = optionsPanel.descriptionArea.text
+      optionPanelState.plamtumlInlineOptions = optionsPanel.plamtumlInlineOptionsArea.text
+      optionPanelState.markerClasses = optionsPanel.markerClassesArea.text.split("\n")
 
-    ExecPlantArch.runAnalyzerBackgroundTask(project, optionPanelState, skipCompile) { result ->
+      optionPanelState.classesToAnalyze = classTreePanel.getClassesToAnalyze()
+      optionPanelState.classesToHide = classTreePanel.getClassesToHide()
+      optionPanelState.librariesToHide = classTreePanel.getContainersToHide()
+    }
+    ExecPlantArch.runAnalyzerBackgroundTask(project, optionPanelState, isUpdate) { result ->
       // populate States to Panels
-      optionPanelState.hiddenContainers = result.containersInDiagram.toList()
-      optionPanelState.hiddenClasses = result.classesInDiagram.toList()
+      optionPanelState.librariesToHide += result.containersInDiagram.toList()
       runOnEdt {
         pngViewerPanel.updatePanel(result.plantUml)
         //      umlOptionsPanel.updateFields(optionPanelState)

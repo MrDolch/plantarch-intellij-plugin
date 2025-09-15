@@ -21,8 +21,6 @@ class AsmTest :
           Parameters(
               title = null,
               caption = null,
-              projectName = "",
-              moduleName = "",
               classesToAnalyze =
                   listOf(
                       ActionStartNewDiagram::class.java.canonicalName,

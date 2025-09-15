@@ -65,13 +65,7 @@ class PngViewerPanel(
     setPlantumlLimitSize()
     image = renderPng(puml)
     preferredSize = Dimension(image.width, image.height)
-    classNameBounds =
-        collectSvgClassBoxes(svg)
-            .filter {
-              optionPanelState.hiddenClasses.any { c -> c.endsWith(it.text) } ||
-                  optionPanelState.hiddenContainers.contains(it.text)
-            }
-            .associate { it.asEntry() }
+    classNameBounds = collectSvgClassBoxes(svg).associate { it.asEntry() }
     invalidate()
     updateUI()
   }
@@ -180,18 +174,19 @@ class PngViewerPanel(
             JMenuItem("Hide class").apply {
               addActionListener {
                 // Beispiel: Klasse zu hiddenClassesSelected hinzufügen und neu rendern
-                optionPanelState.hiddenClassesSelected += className
+                optionPanelState.classesToHide += className
               }
             }
         )
       }
+
   private fun buildLibraryPopup(className: String): JPopupMenu =
       JPopupMenu().apply {
         add(
             JMenuItem("Hide Library").apply {
               addActionListener {
                 // Beispiel: Klasse zu hiddenClassesSelected hinzufügen und neu rendern
-                optionPanelState.hiddenClassesSelected += className
+                optionPanelState.classesToHide += className
               }
             }
         )

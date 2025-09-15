@@ -2,6 +2,7 @@ package com.github.mrdolch.plantarchintellijplugin.diagram.view
 
 import com.github.mrdolch.plantarchintellijplugin.asm.ShowPackages
 import com.github.mrdolch.plantarchintellijplugin.asm.UseByMethodNames
+import com.intellij.mock.MockProject
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
@@ -46,24 +47,24 @@ skinparam linetype polyline
 !pragma layout smetana
 
 @enduml""",
+              MockProject(
+                  null,
+              ) {
+              },
               OptionPanelState(
                   projectName = "Test",
-                  moduleName = "test",
                   libraryPaths = emptySet(),
                   classPaths = emptySet(),
-                  classesInFocus = listOf("com.acme.Foo", "com.acme.Bar", "com.acme.Hidden"),
-                  classesInFocusSelected = listOf("com.acme.Foo"),
-                  hiddenClassesSelected = listOf("com.acme.Hidden"),
-                  hiddenContainers = listOf("ExtLib"),
+                  classesToAnalyze = listOf("com.acme.Foo"),
+                  classesToHide = listOf("com.acme.Hidden"),
                   targetPumlFile = "n/a",
                   showPackages = ShowPackages.NONE,
-                  hiddenContainersSelected = emptyList(),
-                  hiddenClasses = emptyList(),
+                  librariesToHide = emptySet(),
                   title = "Title",
                   description = "Description",
                   showUseByMethodNames = UseByMethodNames.NONE,
                   plamtumlInlineOptions = "",
-                  markerClassesSelected = emptyList(),
+                  markerClasses = emptyList(),
               ),
           ) {}
 

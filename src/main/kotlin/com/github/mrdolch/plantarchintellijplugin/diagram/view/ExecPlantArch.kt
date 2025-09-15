@@ -50,12 +50,13 @@ object ExecPlantArch {
                     val success = compileSynchronously(project)
                     if (!success) {
                       NotificationGroupManager.getInstance()
-                        .getNotificationGroup("PlantArch")
-                        .createNotification(
-                          "Build failed",
-                          "Project must be compiled before analysis.",
-                          NotificationType.ERROR
-                        ).notify(project)
+                          .getNotificationGroup("PlantArch")
+                          .createNotification(
+                              "Build failed",
+                              "Project must be compiled before analysis.",
+                              NotificationType.ERROR,
+                          )
+                          .notify(project)
                     }
                   }
 
@@ -110,18 +111,16 @@ object ExecPlantArch {
       Parameters(
           title = optionPanelState.title,
           caption = optionPanelState.description,
-          projectName = optionPanelState.projectName,
-          moduleName = optionPanelState.moduleName,
           libraryPaths = optionPanelState.libraryPaths.map { Path.of(it) }.toSet(),
           classPaths = optionPanelState.classPaths.map { Path.of(it) }.toSet(),
           showPackages = optionPanelState.showPackages,
-          classesToAnalyze = optionPanelState.classesInFocusSelected,
-          classesToHide = optionPanelState.hiddenClassesSelected,
-          librariesToHide = optionPanelState.hiddenContainersSelected,
+          classesToAnalyze = optionPanelState.classesToAnalyze,
+          classesToHide = optionPanelState.classesToHide,
+          librariesToHide = optionPanelState.librariesToHide.toList(),
+          markerClasses = optionPanelState.markerClasses,
           targetPumlFile = optionPanelState.targetPumlFile,
           showUseByMethodNames = optionPanelState.showUseByMethodNames,
           showLibraries = true,
-          markerClasses = optionPanelState.markerClassesSelected,
           plantumlInlineOptions = optionPanelState.plamtumlInlineOptions,
       )
 }

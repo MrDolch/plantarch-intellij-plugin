@@ -28,14 +28,7 @@ class ClassTreePanel(
         treeProvider(treeModel).apply {
           isRootVisible = false
           cellRenderer = CellRenderer
-          addMouseListener(
-              SelectionListener(this) {
-                optionPanelState.classesInFocusSelected = getClassesToAnalyze()
-                optionPanelState.hiddenClassesSelected = getClassesToHide()
-                optionPanelState.hiddenContainersSelected = getContainersToHide()
-                onChange()
-              }
-          )
+          addMouseListener(SelectionListener(this) { onChange() })
         }
     add(JScrollPane(tree).apply { border = TitledBorder("Class Tree") })
     initClassTree(optionPanelState)
@@ -43,17 +36,15 @@ class ClassTreePanel(
 
   private fun getContainerEntries(optionPanelState: OptionPanelState): List<ContainerEntry> {
     val classpathEntries: List<ClassEntry> =
-        (allQualifiedClassNames + optionPanelState.classesInFocus).sorted().distinct().map {
-          val inFocus = optionPanelState.classesInFocusSelected
-          val hidden = optionPanelState.hiddenClassesSelected
-          val visible = optionPanelState.classesInFocus
+        allQualifiedClassNames.sorted().distinct().map {
+          val inFocus = optionPanelState.classesToAnalyze
+          val hidden = optionPanelState.classesToHide
           ClassEntry(
               name = it,
               visibility =
                   when {
                     inFocus.contains(it) -> VisibilityStatus.IN_FOCUS
                     hidden.contains(it) -> VisibilityStatus.HIDDEN
-                    visible.contains(it) -> VisibilityStatus.MAYBE
                     else -> VisibilityStatus.IN_CLASSPATH
                   },
           )
@@ -75,20 +66,16 @@ class ClassTreePanel(
             }
 
     val containerEntries =
-        (optionPanelState.hiddenContainers + optionPanelState.hiddenContainersSelected)
-            .sorted()
-            .distinct()
-            .map {
-              ContainerEntry(
-                  it,
-                  when {
-                    optionPanelState.hiddenContainersSelected.contains(it) ->
-                        VisibilityStatus.HIDDEN
-                    else -> VisibilityStatus.MAYBE
-                  },
-                  emptyList(),
-              )
-            }
+        optionPanelState.librariesToHide.sorted().distinct().map {
+          ContainerEntry(
+              it,
+              when {
+                optionPanelState.librariesToHide.contains(it) -> VisibilityStatus.HIDDEN
+                else -> VisibilityStatus.MAYBE
+              },
+              emptyList(),
+          )
+        }
     return listOf(ContainerEntry("Source Classes", packages = packageEntries)) + containerEntries
   }
 
@@ -170,9 +157,6 @@ class ClassTreePanel(
           it.visibility = VisibilityStatus.HIDDEN
           tree.invalidate()
           tree.updateUI()
-          optionPanelState.classesInFocusSelected = getClassesToAnalyze()
-          optionPanelState.hiddenClassesSelected = getClassesToHide()
-          optionPanelState.hiddenContainersSelected = getContainersToHide()
           onChange()
           return
         }
@@ -192,9 +176,6 @@ class ClassTreePanel(
       expandSelectedBranches(tree)
       tree.invalidate()
       tree.updateUI()
-      optionPanelState.classesInFocusSelected = getClassesToAnalyze()
-      optionPanelState.hiddenClassesSelected = getClassesToHide()
-      optionPanelState.hiddenContainersSelected = getContainersToHide()
       onChange()
     }
   }
@@ -232,11 +213,12 @@ class ClassTreePanel(
           .distinct()
           .map { it.name }
 
-  fun getContainersToHide(): List<String> =
+  fun getContainersToHide(): Set<String> =
       containerEntries
           .filter { it.visibility == VisibilityStatus.HIDDEN }
           .filter { it.name.endsWith(".jar") }
           .map { it.name }
+          .toSet()
 
   override fun dispose() {}
 
