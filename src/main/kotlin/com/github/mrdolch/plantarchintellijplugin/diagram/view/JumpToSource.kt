@@ -7,17 +7,17 @@ import com.intellij.notification.NotificationType
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.pom.Navigatable
 import com.intellij.psi.JavaPsiFacade
 import com.intellij.psi.PsiElement
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.search.PsiShortNamesCache
-import com.intellij.openapi.roots.ProjectFileIndex
-import com.intellij.pom.Navigatable
 
 object JumpToSource {
-   fun jumpToClassInSources(project: Project, classNameOrFqn: String) {
+  fun jumpToClassInSources(project: Project, classNameOrFqn: String) {
     // SCOPE: nur Projektinhalte (keine Libraries)
     val scope = GlobalSearchScope.projectScope(project)
 
@@ -40,23 +40,26 @@ object JumpToSource {
       0 -> notifyNotFound(project, "$classNameOrFqn (not in sources)")
       1 -> navigateToElement(project, candidates.first())
       else -> {
-        val renderer = object : PsiElementListCellRenderer<PsiElement>() {
-          override fun getElementText(element: PsiElement): String =
-            (element as? NavigationItem)?.presentation?.presentableText ?: element.toString()
+        val renderer =
+            object : PsiElementListCellRenderer<PsiElement>() {
+              override fun getElementText(element: PsiElement): String =
+                  (element as? NavigationItem)?.presentation?.presentableText ?: element.toString()
 
-          override fun getContainerText(element: PsiElement, name: String): String? =
-            (element as? NavigationItem)?.presentation?.locationString
+              override fun getContainerText(element: PsiElement, name: String): String? =
+                  (element as? NavigationItem)?.presentation?.locationString
 
-          override fun getIconFlags(): Int = 0
+              override fun getIconFlags(): Int = 0
+            }
+
+        runCatching {
+          JBPopupFactory.getInstance()
+              .createPopupChooserBuilder(candidates.toList())
+              .setTitle("Jump to Source: $classNameOrFqn")
+              .setRenderer(renderer)
+              .setItemChosenCallback { navigateToElement(project, it) }
+              .createPopup()
+              .showInFocusCenter()
         }
-
-        JBPopupFactory.getInstance()
-          .createPopupChooserBuilder(candidates.toList())
-          .setTitle("Jump to Source: $classNameOrFqn")
-          .setRenderer(renderer)
-          .setItemChosenCallback { navigateToElement(project, it) }
-          .createPopup()
-          .showInFocusCenter()
       }
     }
   }
@@ -74,10 +77,8 @@ object JumpToSource {
     val nav = element.navigationElement
     val vFile = nav.containingFile?.virtualFile
     if (vFile != null) {
-      FileEditorManager.getInstance(project).openTextEditor(
-        OpenFileDescriptor(project, vFile, nav.textOffset),
-        true
-      )
+      FileEditorManager.getInstance(project)
+          .openTextEditor(OpenFileDescriptor(project, vFile, nav.textOffset), true)
     } else {
       (nav as? Navigatable)?.navigate(true)
     }
@@ -85,11 +86,8 @@ object JumpToSource {
 
   private fun notifyNotFound(project: Project, name: String) {
     NotificationGroupManager.getInstance()
-      .getNotificationGroup("PlantArch")
-      .createNotification(
-        "Class not found in sources: $name",
-        NotificationType.WARNING
-      )
-      .notify(project)
+        .getNotificationGroup("PlantArch")
+        .createNotification("Class not found in sources: $name", NotificationType.WARNING)
+        .notify(project)
   }
 }

@@ -2,28 +2,18 @@
 skinparam monochrome false
 
 * <color:orange> ☐ Focus
-** ☐ SVG
 
 * <color:red> ☐ Bugs
-** ☐ NPE bei geänderten Klassennamen oder -package
-** ☐ ignores package names with Uppercase
 
 * <color:blue> ☐ ToDos
-** ☐ Renderer wiederverwenden
 ** ☐ I18n
-** ☐ Publish nach MavenLocal
+** ☐ Hide Options
+** ☐ dropdown with presets
+** ☐ Context Menu: Focus in new Diagram (fast)
 ** ☐ Publish nach Intellij Market
-** ☐ Default-Options-Panel
 ** ☐ Weitere Optionen
-*** ☐ Default-Block in Diagram
-*** ☐ auto render
 *** ☐ auto compile
 *** ☐ show containers
-*** ☐ Marker interfaces
-*** ☐ Colors for Marker interfaces
-** ☑ selber Rendern statt via PlantUml-Plugin
-*** ☑ Copy to Clipboard
-*** ☐ Maximal Breite erweitern
 
 
 * <color:green> ☑ Features\n <color:green> implemented
@@ -38,7 +28,19 @@ skinparam monochrome false
 ** ☑ Class<<data>> in gefundene Klassen
 ** ☑ ToolWindow mit Diagramm
 ** ☑ Tests
+** ☑ selber Rendern statt via PlantUml-Plugin
+*** ☑ Copy to Clipboard
+*** ☑ Maximal Breite erweitern
 ** ☑ Weitere Optionen
 *** ☑ Tree für Klassen-Selektion
+*** ☑ Default-Block in Diagram
+*** ☑ auto render
+*** ☑ Marker interfaces
+*** ☑ Colors for Marker interfaces
+** ☑ Renderer wiederverwenden
+** ☑ Default-Options-Panel
+** ☑ SVG
+** ☑ Bugfixes
+*** ☑ ignores package names with Uppercase
 
 @endmindmap

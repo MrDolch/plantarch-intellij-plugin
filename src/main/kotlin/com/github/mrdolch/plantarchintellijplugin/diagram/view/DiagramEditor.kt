@@ -29,7 +29,8 @@ import javax.swing.border.TitledBorder
 
 class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase(), FileEditor {
   companion object {
-    const val INITIAL_PUML = "@startuml\ntitle Compiling... Analyzing... Rendering... Interacting... \n@enduml\n"
+    const val INITIAL_PUML =
+        "@startuml\ntitle Compiling... Analyzing... Rendering... Interacting... \ncaption Please wait...\n@enduml\n"
   }
 
   private val panel = JPanel(BorderLayout())
@@ -50,7 +51,9 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
           if (optionPanel.autoRenderDiagram.isSelected) renderDiagram(true)
         }
     pngViewerPanel =
-      PngViewerPanel(diagramFile.readText(), project, optionPanel, classTreePanel) {renderDiagram(true)}
+        PngViewerPanel(diagramFile.readText(), project, optionPanel, classTreePanel) {
+          renderDiagram(true)
+        }
     loadDataAsync(optionPanelState, project, this, classTreePanel)
 
     if (diagramContent.startsWith(INITIAL_PUML)) {
@@ -82,7 +85,8 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
   }
 
   fun getProjectByName(projectName: String) =
-      ProjectManager.getInstance().openProjects.first { it.name == projectName }
+      ProjectManager.getInstance().openProjects.firstOrNull { it.name == projectName }
+          ?: ProjectManager.getInstance().defaultProject
 
   private fun loadDataAsync(
       jobParams: OptionPanelState,
