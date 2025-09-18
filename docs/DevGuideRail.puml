@@ -7,13 +7,10 @@ skinparam monochrome false
 
 * <color:blue> ☐ ToDos
 ** ☐ I18n
-** ☐ Hide Options
 ** ☐ dropdown with presets
 ** ☐ Context Menu: Focus in new Diagram (fast)
 ** ☐ Publish nach Intellij Market
 ** ☐ Weitere Optionen
-*** ☐ auto compile
-*** ☐ show containers
 
 
 * <color:green> ☑ Features\n <color:green> implemented
@@ -37,10 +34,14 @@ skinparam monochrome false
 *** ☑ auto render
 *** ☑ Marker interfaces
 *** ☑ Colors for Marker interfaces
+*** ☑ run compile
+*** ☑ show containers
 ** ☑ Renderer wiederverwenden
 ** ☑ Default-Options-Panel
 ** ☑ SVG
 ** ☑ Bugfixes
 *** ☑ ignores package names with Uppercase
+** ☑ Hide Options
+
 
 @endmindmap

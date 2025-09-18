@@ -29,6 +29,7 @@ data class OptionPanelState(
   var classesToHide: List<String>,
   var librariesToHide: Set<String>,
   var markerClasses: List<String>,
+  var showLibraries: Boolean = false,
 ) {
   fun toYaml(): String = Yaml.Companion.default.encodeToString(serializer(), this)
 

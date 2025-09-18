@@ -4,6 +4,14 @@
 
 ## [Unreleased]
 
+## [0.2.2] - 2025-09-18
+
+- Added right-click menus for title, caption, classes, and libraries.
+- New toolbar with *Compile*, *Render*, *Auto Render*, and **Show Libraries** option.
+- Side menu can now be toggled.
+- Improved scrolling and interaction in the diagram view.
+
+
 ## [0.2.1] - 2025-09-15
 
 ### Main Changes

@@ -1,8 +1,5 @@
 package com.github.mrdolch.plantarchintellijplugin.diagram.view
 
-import com.github.mrdolch.plantarchintellijplugin.asm.ShowPackages
-import com.github.mrdolch.plantarchintellijplugin.asm.UseByMethodNames
-import com.intellij.openapi.ui.ComboBox
 import com.intellij.util.ui.JBUI
 import java.awt.BorderLayout
 import java.awt.FlowLayout
@@ -16,28 +13,13 @@ class OptionPanel(optionPanelState: OptionPanelState, val onChange: () -> Unit) 
 
   val titleField =
       JTextField(optionPanelState.title).apply {
-        addActionListener {
-          if (optionPanelState.title != text && autoRenderDiagram.isSelected) onChange()
-        }
+        addActionListener { if (optionPanelState.title != text) onChange() }
       }
   val descriptionArea = textAreaWithState(optionPanelState.description, onChange)
   val plamtumlInlineOptionsArea =
       textAreaWithState(optionPanelState.plamtumlInlineOptions, onChange)
   val markerClassesArea =
       textAreaWithState(optionPanelState.markerClasses.joinToString("\n"), onChange)
-
-  val showMethodNamesDropdown =
-      ComboBox(UseByMethodNames.entries.toTypedArray()).apply {
-        selectedItem = optionPanelState.showUseByMethodNames
-        addItemListener { if (autoRenderDiagram.isSelected) onChange() }
-      }
-  val showPackagesDropdown =
-      ComboBox(ShowPackages.entries.toTypedArray()).apply {
-        selectedItem = optionPanelState.showPackages
-        addItemListener { if (autoRenderDiagram.isSelected) onChange() }
-      }
-  val renderDiagramButton = JButton("Render diagram").apply { addActionListener { onChange() } }
-  val autoRenderDiagram = JCheckBox("Auto Render diagram", true)
 
   init {
     layout = BorderLayout()
@@ -56,13 +38,8 @@ class OptionPanel(optionPanelState: OptionPanelState, val onChange: () -> Unit) 
                   },
                   row++,
               )
-              addRow(JLabel("Show method names:"), showMethodNamesDropdown, row++)
-              addRow(JLabel("Show packages:"), showPackagesDropdown, row++)
               addFullWidth(
-                  JPanel(FlowLayout(FlowLayout.RIGHT)).apply {
-                    add(renderDiagramButton)
-                    add(autoRenderDiagram)
-                  },
+                  JPanel(FlowLayout(FlowLayout.RIGHT)).apply {},
                   row++,
               )
               addFullWidth(
@@ -90,7 +67,7 @@ class OptionPanel(optionPanelState: OptionPanelState, val onChange: () -> Unit) 
         addFocusListener(
             object : FocusAdapter() {
               override fun focusLost(e: FocusEvent) {
-                if (text != initial && autoRenderDiagram.isSelected) onChange()
+                if (text != initial) onChange()
               }
             }
         )

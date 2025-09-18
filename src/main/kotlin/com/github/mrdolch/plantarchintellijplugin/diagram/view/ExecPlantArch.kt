@@ -120,7 +120,7 @@ object ExecPlantArch {
           markerClasses = optionPanelState.markerClasses,
           targetPumlFile = optionPanelState.targetPumlFile,
           showUseByMethodNames = optionPanelState.showUseByMethodNames,
-          showLibraries = true,
+          showLibraries = optionPanelState.showLibraries,
           plantumlInlineOptions = optionPanelState.plamtumlInlineOptions,
       )
 }

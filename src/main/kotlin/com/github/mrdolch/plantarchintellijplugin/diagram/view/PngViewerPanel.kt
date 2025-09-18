@@ -3,6 +3,7 @@ package com.github.mrdolch.plantarchintellijplugin.diagram.view
 import com.github.mrdolch.plantarchintellijplugin.diagram.view.JumpToSource.jumpToClassInSources
 import com.intellij.openapi.ide.CopyPasteManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.Messages
 import java.awt.*
 import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.Transferable
@@ -18,6 +19,7 @@ import javax.imageio.ImageIO
 import javax.swing.JMenuItem
 import javax.swing.JPanel
 import javax.swing.JPopupMenu
+import javax.swing.JTextField
 import kotlin.math.max
 import net.sourceforge.plantuml.FileFormat
 import net.sourceforge.plantuml.FileFormatOption
@@ -34,6 +36,8 @@ class PngViewerPanel(
   lateinit var svg: String
   lateinit var puml: String
   private lateinit var classNameBounds: Map<String, Rectangle>
+  private var titleBounds: Rectangle? = null
+  private var captionBounds: Rectangle? = null
 
   private val generalPopup by lazy { buildGeneralPopup() }
 
@@ -69,6 +73,17 @@ class PngViewerPanel(
     image = renderPng(puml)
     preferredSize = Dimension(image.width, image.height)
     classNameBounds = collectSvgClassBoxes(svg).associate { it.asEntry() }
+    val collectSvgTitleAndCaption = collectSvgTitleAndCaption(svg)
+    titleBounds =
+        collectSvgTitleAndCaption
+            .filter { it.kind == SvgLabel.Kind.TITLE }
+            .map { it.rect }
+            .firstOrNull()
+    captionBounds =
+        collectSvgTitleAndCaption
+            .filter { it.kind == SvgLabel.Kind.CAPTION }
+            .map { it.rect }
+            .firstOrNull()
     invalidate()
     updateUI()
   }
@@ -112,8 +127,20 @@ class PngViewerPanel(
             if (!e.isPopupTrigger) return
             val classUnderMouse =
                 classNameBounds.entries.firstOrNull { it.value.contains(e.point) }?.key
+            val titleUnderMouse = titleBounds?.contains(e.point) ?: false
+            val captionUnderMouse = captionBounds?.contains(e.point) ?: false
             val popup =
                 when {
+                  titleUnderMouse ->
+                      buildTitlePopup(optionPanel.titleField.text) { newText ->
+                        optionPanel.titleField.text = newText
+                        onChange()
+                      }
+                  captionUnderMouse ->
+                      buildTitlePopup(optionPanel.descriptionArea.text) { newText ->
+                        optionPanel.descriptionArea.text = newText
+                        onChange()
+                      }
                   classUnderMouse == null -> generalPopup
                   classUnderMouse.endsWith(".jar") -> buildLibraryPopup(classUnderMouse)
                   else -> buildClassPopup(classUnderMouse)
@@ -155,6 +182,28 @@ class PngViewerPanel(
         )
       }
 
+  fun buildTitlePopup(
+      currentTitle: String,
+      onTitleChanged: (String) -> Unit,
+  ): JPopupMenu =
+      JPopupMenu().apply {
+        add(
+            JMenuItem("edit").apply {
+              addActionListener {
+                val textField = JTextField(currentTitle)
+                Messages.showTextAreaDialog(
+                    textField,
+                    "Caption",
+                    "",
+                    { text -> text.lines() },
+                    { lines -> lines.joinToString("\n") },
+                )
+                onTitleChanged(textField.text.trim())
+              }
+            }
+        )
+      }
+
   private fun buildClassPopup(className: String): JPopupMenu =
       JPopupMenu().apply {
         add(
@@ -164,19 +213,19 @@ class PngViewerPanel(
         )
         addSeparator()
         add(
-          JMenuItem("Jump to Source").apply {
-            addActionListener { jumpToClassInSources(project, className) }
-          }
+            JMenuItem("Jump to Source").apply {
+              addActionListener { jumpToClassInSources(project, className) }
+            }
         )
         addSeparator()
         add(
-          JMenuItem("Make to Marker").apply {
-            addActionListener {
-              optionPanel.markerClassesArea.text =
-                optionPanel.markerClassesArea.text.trim() + "\n" + className
-              onChange()
+            JMenuItem("Make to Marker").apply {
+              addActionListener {
+                optionPanel.markerClassesArea.text =
+                    optionPanel.markerClassesArea.text.trim() + "\n" + className
+                onChange()
+              }
             }
-          }
         )
         add(
             JMenuItem("Hide Class").apply {

@@ -36,6 +36,8 @@ class DragScrollPane(view: Component) : JScrollPane(view) {
             viewport.viewPosition = Point(newX, newY)
           }
         }
+    verticalScrollBar.unitIncrement = 16
+    horizontalScrollBar.unitIncrement = 16
 
     viewport.view.addMouseListener(dragAdapter)
     viewport.view.addMouseMotionListener(dragAdapter)

@@ -12,6 +12,7 @@ import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.roots.ProjectFileIndex
+import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.util.Computable
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.UserDataHolderBase
@@ -20,11 +21,12 @@ import com.intellij.openapi.vfs.readText
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.search.searches.AllClassesSearch
 import com.intellij.util.concurrency.AppExecutorUtil
+import com.intellij.util.ui.JBUI
 import java.awt.BorderLayout
+import java.awt.FlowLayout
 import java.beans.PropertyChangeListener
-import javax.swing.JComponent
-import javax.swing.JPanel
-import javax.swing.ScrollPaneConstants
+import javax.swing.*
+import javax.swing.border.EmptyBorder
 import javax.swing.border.TitledBorder
 
 class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase(), FileEditor {
@@ -33,7 +35,7 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
         "@startuml\ntitle Compiling... Analyzing... Rendering... Interacting... \ncaption Please wait...\n@enduml\n"
   }
 
-  private val panel = JPanel(BorderLayout())
+  private val panel: JPanel
   private val optionPanelState: OptionPanelState
   private val optionPanel: OptionPanel
   private val classTreePanel: ClassTreePanel
@@ -41,15 +43,40 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
   private val disposable = Disposer.newDisposable()
   private val project: Project
 
+  private val showMethodNamesDropdown: ComboBox<UseByMethodNames>
+  private val showPackagesDropdown: ComboBox<ShowPackages>
+  private val showLibraries: JCheckBox
+
   init {
     val diagramContent = String(diagramFile.contentsToByteArray())
     optionPanelState = getOptionPanelState(diagramContent)
     project = getProjectByName(optionPanelState.projectName)
     optionPanel = OptionPanel(optionPanelState) { renderDiagram(true) }
-    classTreePanel =
-        ClassTreePanel(optionPanelState) {
-          if (optionPanel.autoRenderDiagram.isSelected) renderDiagram(true)
+
+    val autoRender = JCheckBox("Auto Render", true)
+    fun onChange() {
+      if (autoRender.isSelected) renderDiagram(true)
+    }
+    val compileNowButton =
+        JButton("Compile now").apply { addActionListener { renderDiagram(true) } }
+    val renderNowButton = JButton("Render now").apply { addActionListener { onChange() } }
+
+    showMethodNamesDropdown =
+        ComboBox(UseByMethodNames.entries.toTypedArray()).apply {
+          selectedItem = optionPanelState.showUseByMethodNames
+          addItemListener { onChange() }
         }
+    showPackagesDropdown =
+        ComboBox(ShowPackages.entries.toTypedArray()).apply {
+          selectedItem = optionPanelState.showPackages
+          addItemListener { onChange() }
+        }
+    showLibraries =
+        JCheckBox("Show Libraries", optionPanelState.showLibraries).apply {
+          addActionListener { onChange() }
+        }
+
+    classTreePanel = ClassTreePanel(optionPanelState) { onChange() }
     pngViewerPanel =
         PngViewerPanel(diagramFile.readText(), project, optionPanel, classTreePanel) {
           renderDiagram(true)
@@ -64,24 +91,47 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
       )
     }
 
-    panel.add(
-        DragScrollPane(
-                JPanel(BorderLayout()).apply<JPanel> {
-                  add(optionPanel, BorderLayout.NORTH)
-                  add(classTreePanel, BorderLayout.CENTER)
-                }
-            )
-            .apply { horizontalScrollBarPolicy = ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER },
-        BorderLayout.WEST,
-    )
-    panel.add(
-        DragScrollPane(pngViewerPanel).apply {
-          border = TitledBorder("Dependency Diagram")
-          verticalScrollBar.unitIncrement = 16
-          horizontalScrollBar.unitIncrement = 16
-        },
-        BorderLayout.CENTER,
-    )
+    panel =
+        JPanel(BorderLayout()).apply {
+          val left =
+              DragScrollPane(
+                      JPanel(BorderLayout()).apply {
+                        add(optionPanel, BorderLayout.NORTH)
+                        add(classTreePanel, BorderLayout.CENTER)
+                      }
+                  )
+                  .apply {
+                    isVisible = false
+                    horizontalScrollBarPolicy = ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
+                  }
+          add(left, BorderLayout.WEST)
+          add(
+              DragScrollPane(
+                      JPanel(FlowLayout(FlowLayout.LEFT)).apply {
+                        border = JBUI.Borders.emptyBottom(4)
+                        add(
+                            JButton("Side Menu").apply {
+                              addActionListener { left.isVisible = !left.isVisible }
+                            }
+                        )
+                        add(compileNowButton)
+                        add(renderNowButton)
+                        add(autoRender.apply { horizontalTextPosition = SwingConstants.LEFT })
+                        add(JLabel("Show methods:"))
+                        add(showMethodNamesDropdown)
+                        add(JLabel("Show packages:"))
+                        add(showPackagesDropdown)
+                        add(showLibraries.apply { horizontalTextPosition = SwingConstants.LEFT })
+                      }
+                  )
+                  .apply { verticalScrollBarPolicy = ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER },
+              BorderLayout.NORTH,
+          )
+          add(
+              DragScrollPane(pngViewerPanel).apply { border = TitledBorder("Dependency Diagram") },
+              BorderLayout.CENTER,
+          )
+        }
   }
 
   fun getProjectByName(projectName: String) =
@@ -136,9 +186,9 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
   fun renderDiagram(isUpdate: Boolean) {
     if (isUpdate) {
       // collect States from Panels
-      optionPanelState.showPackages = optionPanel.showPackagesDropdown.selectedItem as ShowPackages
+      optionPanelState.showPackages = showPackagesDropdown.selectedItem as ShowPackages
       optionPanelState.showUseByMethodNames =
-          optionPanel.showMethodNamesDropdown.selectedItem as UseByMethodNames
+          showMethodNamesDropdown.selectedItem as UseByMethodNames
       optionPanelState.title = optionPanel.titleField.text
       optionPanelState.description = optionPanel.descriptionArea.text
       optionPanelState.plamtumlInlineOptions = optionPanel.plamtumlInlineOptionsArea.text
@@ -147,6 +197,7 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
       optionPanelState.classesToAnalyze = classTreePanel.getClassesToAnalyze()
       optionPanelState.classesToHide = classTreePanel.getClassesToHide()
       optionPanelState.librariesToHide = classTreePanel.getContainersToHide()
+      optionPanelState.showLibraries = showLibraries.isSelected
     }
     ExecPlantArch.runAnalyzerBackgroundTask(project, optionPanelState, isUpdate) { result ->
       // populate States to Panels
