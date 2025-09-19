@@ -1,6 +1,8 @@
 package com.github.mrdolch.plantarchintellijplugin.diagram.view
 
 import com.github.mrdolch.plantarchintellijplugin.asm.Asm
+import com.github.mrdolch.plantarchintellijplugin.asm.MarkerClasses
+import com.github.mrdolch.plantarchintellijplugin.asm.MarkerPatterns
 import com.github.mrdolch.plantarchintellijplugin.asm.Parameters
 import com.github.mrdolch.plantarchintellijplugin.asm.Result
 import com.intellij.notification.NotificationGroupManager
@@ -117,7 +119,8 @@ object ExecPlantArch {
           classesToAnalyze = optionPanelState.classesToAnalyze,
           classesToHide = optionPanelState.classesToHide,
           librariesToHide = optionPanelState.librariesToHide.toList(),
-          markerClasses = optionPanelState.markerClasses,
+          markerClasses = MarkerClasses(optionPanelState.markerClasses),
+          markerPatterns = MarkerPatterns(optionPanelState.markerClasses),
           targetPumlFile = optionPanelState.targetPumlFile,
           showUseByMethodNames = optionPanelState.showUseByMethodNames,
           showLibraries = optionPanelState.showLibraries,

@@ -62,7 +62,8 @@ data class Parameters(
     val caption: String?,
     var classesToAnalyze: List<String> = emptyList(),
     var classesToHide: List<String> = emptyList(),
-    var markerClasses: List<String> = emptyList(),
+    var markerClasses: MarkerClasses = MarkerClasses(emptyList()),
+    var markerPatterns: MarkerPatterns = MarkerPatterns(emptyList()),
     var librariesToHide: List<String> = emptyList(),
     val libraryPaths: Set<Path>,
     val classPaths: Set<Path>,
@@ -72,6 +73,23 @@ data class Parameters(
     var targetPumlFile: String,
     var plantumlInlineOptions: String,
 )
+
+data class MarkerClasses(val values: List<String>) {
+  private val markerClasses = values.filter { !it.contains("*") }
+
+  fun contains(klasse: Klasse): Boolean =
+      markerClasses.contains(klasse.fullname) || markerClasses.contains(klasse.simplename)
+}
+
+data class MarkerPatterns(val values: List<String>) {
+  private val startsWith = values.filter { it.endsWith("*") }.map { it.removeSuffix("*") }
+  private val endsWith = values.filter { it.startsWith("*") }.map { it.removePrefix("*") }
+
+  fun getStereotypes(klasse: Klasse): Set<String> =
+      (startsWith.filter { klasse.simplename.startsWith(it) } +
+              endsWith.filter { klasse.simplename.endsWith(it) })
+          .toSet()
+}
 
 enum class ShowPackages {
   NONE,
@@ -157,7 +175,7 @@ object Asm {
                     .filter { it.container != Containers.UNKNOWN }
                     .filter { !it.container.name.endsWith(".jar") })
             .filter { !job.classesToHide.contains(it.fullname) }
-            .filter { !job.markerClasses.contains(it.simplename) }
+            .filter { !job.markerClasses.contains(it) }
             .toSet()
     val edgesInDiagram =
         deps
@@ -170,7 +188,7 @@ object Asm {
         deps
             .flatMap { it.deps }
             .filter { klassenInDiagram.contains(it.from) }
-            .filter { job.markerClasses.contains(it.to.simplename) }
+            .filter { job.markerClasses.contains(it.to) }
             .filter {
               it.kind == DepKind.IMPLEMENTS ||
                   it.kind == DepKind.EXTENDS ||
@@ -185,9 +203,8 @@ object Asm {
     klassenInDiagram
         .map { klasse ->
           val marker =
-              edgesToMarkers
-                  .filter { it.from == klasse }
-                  .map { "<<${it.to.simplename}>>" }
+              (edgesToMarkers.filter { it.from == klasse }.map { "<<${it.to.simplename}>>" } +
+                      job.markerPatterns.getStereotypes(klasse).map { "<<$it>>" })
                   .sorted()
                   .distinct()
                   .joinToString("")

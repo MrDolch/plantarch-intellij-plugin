@@ -1,9 +1,14 @@
 package com.github.mrdolch.plantarchintellijplugin.diagram.view
 
 import com.github.mrdolch.plantarchintellijplugin.diagram.view.JumpToSource.jumpToClassInSources
+import com.intellij.notification.NotificationGroupManager
+import com.intellij.notification.NotificationType
 import com.intellij.openapi.ide.CopyPasteManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.Messages
+import com.intellij.ui.components.JBScrollPane
+import com.intellij.ui.components.JBTextArea
 import java.awt.*
 import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.Transferable
@@ -16,6 +21,7 @@ import java.io.ByteArrayOutputStream
 import java.io.Serializable
 import java.nio.charset.StandardCharsets
 import javax.imageio.ImageIO
+import javax.swing.JComponent
 import javax.swing.JMenuItem
 import javax.swing.JPanel
 import javax.swing.JPopupMenu
@@ -69,6 +75,15 @@ class PngViewerPanel(
   fun updatePanel(puml: String) {
     this.puml = puml
     svg = renderSvg(puml)
+    if (svg.contains("An error has occur")) {
+      NotificationGroupManager.getInstance()
+          .getNotificationGroup("PlantArch")
+          .createNotification(
+              "During image rendering in plantuml: An error as occurred.",
+              NotificationType.WARNING,
+          )
+          .notify(project)
+    }
     setPlantumlLimitSize()
     image = renderPng(puml)
     preferredSize = Dimension(image.width, image.height)
@@ -132,15 +147,23 @@ class PngViewerPanel(
             val popup =
                 when {
                   titleUnderMouse ->
-                      buildTitlePopup(optionPanel.titleField.text) { newText ->
+                      buildTextAreaPopup(
+                          "Edit Title",
+                          optionPanel.titleField.text,
+                      ) { newText ->
                         optionPanel.titleField.text = newText
                         onChange()
                       }
+
                   captionUnderMouse ->
-                      buildTitlePopup(optionPanel.descriptionArea.text) { newText ->
+                      buildTextAreaPopup(
+                          "Edit Caption",
+                          optionPanel.descriptionArea.text,
+                      ) { newText ->
                         optionPanel.descriptionArea.text = newText
                         onChange()
                       }
+
                   classUnderMouse == null -> generalPopup
                   classUnderMouse.endsWith(".jar") -> buildLibraryPopup(classUnderMouse)
                   else -> buildClassPopup(classUnderMouse)
@@ -182,23 +205,54 @@ class PngViewerPanel(
         )
       }
 
-  fun buildTitlePopup(
-      currentTitle: String,
+  private class EditDialog(dialogTitle: String, content: String) : DialogWrapper(true) {
+    private val textArea =
+        JBTextArea(content, 10, 50).apply {
+          lineWrap = true
+          wrapStyleWord = true
+          emptyText.text = ""
+        }
+
+    init {
+      title = dialogTitle
+      init()
+    }
+
+    override fun createCenterPanel(): JComponent = JBScrollPane(textArea)
+
+    fun result(): String = textArea.text.trim()
+  }
+
+  fun buildTextAreaPopup(
+      dialogTitle: String,
+      content: String,
       onTitleChanged: (String) -> Unit,
+  ): JPopupMenu =
+      JPopupMenu().apply {
+        add(
+            JMenuItem("Edit").apply {
+              addActionListener {
+                val dialog = EditDialog(dialogTitle, content)
+                if (dialog.showAndGet()) {
+                  onTitleChanged(dialog.result())
+                }
+              }
+            }
+        )
+      }
+
+  fun buildListPopup(
+      dialogTitle: String,
+      content: String,
+      onTextChanged: (String) -> Unit,
   ): JPopupMenu =
       JPopupMenu().apply {
         add(
             JMenuItem("edit").apply {
               addActionListener {
-                val textField = JTextField(currentTitle)
-                Messages.showTextAreaDialog(
-                    textField,
-                    "Caption",
-                    "",
-                    { text -> text.lines() },
-                    { lines -> lines.joinToString("\n") },
-                )
-                onTitleChanged(textField.text.trim())
+                val textField = JTextField(content)
+                Messages.showTextAreaDialog(textField, dialogTitle, "")
+                if (textField.text != content) onTextChanged(textField.text.trim())
               }
             }
         )
