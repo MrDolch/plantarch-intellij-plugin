@@ -23,11 +23,13 @@ class OptionPanelStateTest :
                       .canonicalPath,
               showPackages = ShowPackages.NESTED,
               showUseByMethodNames = UseByMethodNames.NONE,
-              classesToAnalyze = listOf("className"),
-              librariesToHide = emptySet(),
-              classesToHide = emptyList(),
+              classesToAnalyze = mutableSetOf("className"),
+              classesInDiagram = mutableSetOf("className"),
+              librariesToHide = mutableSetOf(),
+              librariesDiscovered = mutableSetOf(),
+              classesToHide = mutableSetOf(),
               plamtumlInlineOptions = "",
-              markerClasses = emptyList(),
+              markerClasses = mutableSetOf(),
           )
       "should serialize to yaml" {
         val yaml = testee.toYaml()

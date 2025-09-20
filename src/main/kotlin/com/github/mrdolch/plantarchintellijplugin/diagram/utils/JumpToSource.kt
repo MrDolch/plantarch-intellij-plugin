@@ -1,4 +1,4 @@
-package com.github.mrdolch.plantarchintellijplugin.diagram.view
+package com.github.mrdolch.plantarchintellijplugin.diagram.utils
 
 import com.intellij.ide.util.PsiElementListCellRenderer
 import com.intellij.navigation.NavigationItem

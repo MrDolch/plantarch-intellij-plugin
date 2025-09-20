@@ -1,12 +1,19 @@
 package com.github.mrdolch.plantarchintellijplugin.diagram.view
 
-import com.github.mrdolch.plantarchintellijplugin.diagram.view.JumpToSource.jumpToClassInSources
+import com.github.mrdolch.plantarchintellijplugin.asm.ShowPackages
+import com.github.mrdolch.plantarchintellijplugin.asm.UseByMethodNames
+import com.github.mrdolch.plantarchintellijplugin.diagram.utils.JumpToLibrary
+import com.github.mrdolch.plantarchintellijplugin.diagram.utils.JumpToSource.jumpToClassInSources
+import com.intellij.ide.util.TreeClassChooserFactory
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.ide.CopyPasteManager
+import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.Messages
+import com.intellij.psi.search.GlobalSearchScope
+import com.intellij.psi.search.GlobalSearchScopesCore
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextArea
 import java.awt.*
@@ -22,6 +29,7 @@ import java.io.Serializable
 import java.nio.charset.StandardCharsets
 import javax.imageio.ImageIO
 import javax.swing.JComponent
+import javax.swing.JMenu
 import javax.swing.JMenuItem
 import javax.swing.JPanel
 import javax.swing.JPopupMenu
@@ -35,7 +43,6 @@ class PngViewerPanel(
     puml: String,
     val project: Project,
     val optionPanel: OptionPanel,
-    val classTreePanel: ClassTreePanel,
     val onChange: () -> Unit,
 ) : JPanel(), Serializable {
   private lateinit var image: BufferedImage
@@ -44,8 +51,7 @@ class PngViewerPanel(
   private lateinit var classNameBounds: Map<String, Rectangle>
   private var titleBounds: Rectangle? = null
   private var captionBounds: Rectangle? = null
-
-  private val generalPopup by lazy { buildGeneralPopup() }
+  private var optionPanelState = optionPanel.optionPanelState
 
   init {
     updatePanel(puml)
@@ -66,7 +72,22 @@ class PngViewerPanel(
           override fun mouseClicked(e: MouseEvent) {
             classNameBounds
                 .filter { it.value.contains(e.point) }
-                .forEach { classTreePanel.toggleEntryFromDiagram(it.key) }
+                .forEach { (simplename, _) ->
+                  if (simplename.endsWith(".jar")) {
+                    if (optionPanelState.librariesDiscovered.contains(simplename))
+                        if (optionPanelState.librariesToHide.add(simplename)) onChange()
+                  } else {
+                    optionPanelState.classesInDiagram
+                        .filter { it.substringAfterLast(".", it) == simplename }
+                        .forEach { classname ->
+                          if (
+                              optionPanelState.classesToAnalyze.remove(classname) ||
+                                  optionPanelState.classesToAnalyze.add(classname)
+                          )
+                              onChange()
+                        }
+                  }
+                }
           }
         }
     )
@@ -158,13 +179,13 @@ class PngViewerPanel(
                   captionUnderMouse ->
                       buildTextAreaPopup(
                           "Edit Caption",
-                          optionPanel.descriptionArea.text,
+                          optionPanel.captionArea.text,
                       ) { newText ->
-                        optionPanel.descriptionArea.text = newText
+                        optionPanel.captionArea.text = newText
                         onChange()
                       }
 
-                  classUnderMouse == null -> generalPopup
+                  classUnderMouse == null -> buildGeneralPopup()
                   classUnderMouse.endsWith(".jar") -> buildLibraryPopup(classUnderMouse)
                   else -> buildClassPopup(classUnderMouse)
                 }
@@ -203,6 +224,83 @@ class PngViewerPanel(
               addActionListener { CopyPasteManager.copyTextToClipboard(svg) }
             }
         )
+        addSeparator()
+        add(
+            JMenu("Show Packages").apply {
+              ShowPackages.entries.forEach { value ->
+                add(
+                    JMenuItem(value.name).apply {
+                      addActionListener {
+                        optionPanelState.showPackages = value
+                        onChange()
+                      }
+                    }
+                )
+              }
+            }
+        )
+        add(
+            JMenu("Show Methods").apply {
+              UseByMethodNames.entries.forEach { value ->
+                add(
+                    JMenuItem(value.name).apply {
+                      addActionListener {
+                        optionPanelState.showUseByMethodNames = value
+                        onChange()
+                      }
+                    }
+                )
+              }
+            }
+        )
+        if (optionPanelState.showLibraries && optionPanelState.librariesToHide.isNotEmpty())
+            add(
+                JMenu("Unhide Library").apply {
+                  optionPanelState.librariesToHide.forEach { libName ->
+                    add(
+                        JMenuItem(libName).apply {
+                          addActionListener {
+                            if (optionPanelState.librariesToHide.remove(libName)) onChange()
+                          }
+                        }
+                    )
+                  }
+                }
+            )
+        if (!optionPanelState.showLibraries)
+            add(
+                JMenuItem("Show Libraries").apply {
+                  addActionListener {
+                    optionPanelState.showLibraries = true
+                    onChange()
+                  }
+                }
+            )
+        addSeparator()
+        add(
+            JMenuItem("Add Class from Project").apply {
+              addActionListener {
+                val runtimeScope =
+                    ModuleManager.getInstance(project)
+                        .modules
+                        .map { GlobalSearchScope.moduleRuntimeScope(it, false) }
+                        .reduce { a, b -> a.uniteWith(b) }
+
+                val chooser =
+                    TreeClassChooserFactory.getInstance(project)
+                        .createNoInnerClassesScopeChooser(
+                            "Select Class",
+                            runtimeScope,
+                            { psiClass -> psiClass.containingClass == null },
+                            null,
+                        )
+                chooser.showDialog()
+                chooser.selected?.qualifiedName?.let { classname ->
+                  if (optionPanelState.classesToAnalyze.add(classname)) onChange()
+                }
+              }
+            }
+        )
       }
 
   private class EditDialog(dialogTitle: String, content: String) : DialogWrapper(true) {
@@ -230,7 +328,7 @@ class PngViewerPanel(
   ): JPopupMenu =
       JPopupMenu().apply {
         add(
-            JMenuItem("Edit").apply {
+            JMenuItem(dialogTitle).apply {
               addActionListener {
                 val dialog = EditDialog(dialogTitle, content)
                 if (dialog.showAndGet()) {
@@ -262,7 +360,12 @@ class PngViewerPanel(
       JPopupMenu().apply {
         add(
             JMenuItem("Focus Class").apply {
-              addActionListener { classTreePanel.focusClass(className) }
+              addActionListener {
+                optionPanelState.classesToAnalyze.clear()
+                optionPanelState.classesToAnalyze.add(className)
+                optionPanelState.classesToHide.remove(className)
+                onChange()
+              }
             }
         )
         addSeparator()
@@ -275,24 +378,40 @@ class PngViewerPanel(
         add(
             JMenuItem("Make to Marker").apply {
               addActionListener {
-                optionPanel.markerClassesArea.text =
-                    optionPanel.markerClassesArea.text.trim() + "\n" + className
+                optionPanel.markerClassesArea.text.apply { text.trim() + "\n" + className }
                 onChange()
               }
             }
         )
         add(
             JMenuItem("Hide Class").apply {
-              addActionListener { classTreePanel.hideEntryFromDiagram(className) }
+              addActionListener {
+                optionPanelState.classesToAnalyze.remove(className)
+                if (optionPanelState.classesToHide.add(className)) onChange()
+              }
             }
         )
       }
 
-  private fun buildLibraryPopup(className: String): JPopupMenu =
+  private fun buildLibraryPopup(libraryName: String): JPopupMenu =
       JPopupMenu().apply {
         add(
             JMenuItem("Hide Library").apply {
-              addActionListener { classTreePanel.toggleEntryFromDiagram(className) }
+              addActionListener {
+                if (optionPanelState.librariesToHide.add(libraryName)) onChange()
+              }
+            }
+        )
+        addSeparator()
+        add(
+            JMenuItem("Jump to Project view").apply {
+              addActionListener {
+                optionPanelState.libraryPaths
+                    .firstOrNull { it.replace('\\', '/').endsWith("/$libraryName") }
+                    ?.let { libraryPath ->
+                      JumpToLibrary.openLibraryInProjectView(project, libraryPath)
+                    }
+              }
             }
         )
       }

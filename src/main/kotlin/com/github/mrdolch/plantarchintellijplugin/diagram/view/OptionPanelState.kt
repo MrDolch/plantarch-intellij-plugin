@@ -25,10 +25,12 @@ data class OptionPanelState(
   var plamtumlInlineOptions: String,
   var showPackages: ShowPackages,
   var showUseByMethodNames: UseByMethodNames = UseByMethodNames.NONE,
-  var classesToAnalyze: List<String>,
-  var classesToHide: List<String>,
-  var librariesToHide: Set<String>,
-  var markerClasses: List<String>,
+  var classesInDiagram: MutableSet<String>,
+  var classesToAnalyze: MutableSet<String>,
+  var classesToHide: MutableSet<String>,
+  var librariesToHide: MutableSet<String>,
+  var librariesDiscovered: MutableSet<String>,
+  var markerClasses: Set<String>,
   var showLibraries: Boolean = false,
 ) {
   fun toYaml(): String = Yaml.Companion.default.encodeToString(serializer(), this)
@@ -54,12 +56,14 @@ data class OptionPanelState(
                         "." + DiagramEditorProvider.FILE_EXTENSION,
                     )
                     .canonicalPath,
-            classesToAnalyze = listOf(className),
-            librariesToHide = setOf("jrt.jar"),
-            classesToHide = emptyList(),
+            classesInDiagram = mutableSetOf(className),
+            classesToAnalyze = mutableSetOf(className),
+            librariesToHide = mutableSetOf("jrt.jar"),
+            librariesDiscovered = mutableSetOf("jrt.jar"),
+            classesToHide = mutableSetOf(),
             showPackages = configuration.showPackages,
             showUseByMethodNames = configuration.showMethodNames,
-            markerClasses = configuration.markerClasses.split("\n"),
+            markerClasses = configuration.markerClasses.split("\n").toSet(),
             plamtumlInlineOptions = configuration.plantumlOptions,
         )
 

@@ -101,4 +101,9 @@ object Containers {
           .toList()
     }
   }
+
+  fun clear() {
+    nameZuContainer.clear()
+    klassenZuContainer.clear()
+  }
 }

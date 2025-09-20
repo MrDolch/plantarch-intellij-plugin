@@ -14,16 +14,18 @@ class PngViewerPanelTest :
               projectName = "Test",
               libraryPaths = emptySet(),
               classPaths = emptySet(),
-              classesToAnalyze = listOf("com.acme.Foo"),
-              classesToHide = listOf("com.acme.Hidden"),
+              classesToAnalyze = mutableSetOf("com.acme.Foo"),
+              classesInDiagram = mutableSetOf("com.acme.Foo"),
+              classesToHide = mutableSetOf("com.acme.Hidden"),
               targetPumlFile = "n/a",
               showPackages = ShowPackages.NONE,
-              librariesToHide = emptySet(),
+              librariesToHide = mutableSetOf(),
+              librariesDiscovered = mutableSetOf(),
               title = "Title",
               description = "Description",
               showUseByMethodNames = UseByMethodNames.NONE,
               plamtumlInlineOptions = "",
-              markerClasses = emptyList(),
+              markerClasses = mutableSetOf(),
           )
       val puml =
           """@startuml
@@ -64,11 +66,10 @@ skinparam linetype polyline
 @enduml"""
       val testee =
           PngViewerPanel(
-            puml,
-            MockProject(null) {},
-            OptionPanel(optionPanelState) {},
-            ClassTreePanel(optionPanelState) {},
-          ) {  }
+              puml,
+              MockProject(null) {},
+              OptionPanel(optionPanelState) {},
+          ) {}
 
       "should build panel based on puml" {
         testee.svg shouldNotContain "Dot executable does not exist"

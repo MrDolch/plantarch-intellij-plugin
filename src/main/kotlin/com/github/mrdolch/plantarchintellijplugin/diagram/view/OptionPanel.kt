@@ -9,15 +9,15 @@ import java.awt.event.FocusAdapter
 import java.awt.event.FocusEvent
 import javax.swing.*
 
-class OptionPanel(optionPanelState: OptionPanelState, val onChange: () -> Unit) : JPanel() {
+class OptionPanel(val optionPanelState: OptionPanelState, val onChange: () -> Unit) : JPanel() {
 
   val titleField =
       JTextField(optionPanelState.title).apply {
         addActionListener { if (optionPanelState.title != text) onChange() }
       }
-  val descriptionArea = textAreaWithState(optionPanelState.description, onChange)
-  val plamtumlInlineOptionsArea =
-      textAreaWithState(optionPanelState.plamtumlInlineOptions, onChange)
+  val captionArea = textAreaWithState(optionPanelState.description, onChange)
+  val stylesArea =
+      textAreaWithState(optionPanelState.plamtumlInlineOptions, onChange, 15)
   val markerClassesArea =
       textAreaWithState(optionPanelState.markerClasses.joinToString("\n"), onChange)
 
@@ -26,15 +26,15 @@ class OptionPanel(optionPanelState: OptionPanelState, val onChange: () -> Unit) 
     add(
         JScrollPane(
             JPanel(GridBagLayout()).apply {
-              border = BorderFactory.createTitledBorder("Options")
+              border = BorderFactory.createTitledBorder("Plantuml-Options")
 
               var row = 0
 
-              addRow(JLabel("Title:"), titleField, row++)
+              addRow(JLabel("Title"), titleField, row++)
               addFullWidth(
                   JPanel(BorderLayout()).apply {
-                    border = BorderFactory.createTitledBorder("Description")
-                    add(JScrollPane(descriptionArea), BorderLayout.CENTER)
+                    border = BorderFactory.createTitledBorder("Caption")
+                    add(JScrollPane(captionArea), BorderLayout.CENTER)
                   },
                   row++,
               )
@@ -43,27 +43,27 @@ class OptionPanel(optionPanelState: OptionPanelState, val onChange: () -> Unit) 
                   row++,
               )
               addFullWidth(
-                  JPanel(BorderLayout()).apply {
-                    border = BorderFactory.createTitledBorder("Plantuml Inline Options")
-                    add(JScrollPane(plamtumlInlineOptionsArea), BorderLayout.CENTER)
-                  },
-                  row++,
+                JPanel(BorderLayout()).apply {
+                  border = BorderFactory.createTitledBorder("Marker-Classes")
+                  add(JScrollPane(markerClassesArea), BorderLayout.CENTER)
+                },
+                row++,
               )
               addFullWidth(
                   JPanel(BorderLayout()).apply {
-                    border = BorderFactory.createTitledBorder("Marker-Classes")
-                    add(JScrollPane(markerClassesArea), BorderLayout.CENTER)
+                    border = BorderFactory.createTitledBorder("Styles")
+                    add(JScrollPane(stylesArea), BorderLayout.CENTER)
                   },
                   row++,
               )
             }
         ),
-        BorderLayout.CENTER,
+        BorderLayout.NORTH,
     )
   }
 
-  private fun textAreaWithState(initial: String, onChange: () -> Unit): JTextArea =
-      JTextArea(initial, 5, 20).apply {
+  private fun textAreaWithState(initial: String, onChange: () -> Unit, rows: Int = 5): JTextArea =
+      JTextArea(initial, rows, 20).apply {
         addFocusListener(
             object : FocusAdapter() {
               override fun focusLost(e: FocusEvent) {

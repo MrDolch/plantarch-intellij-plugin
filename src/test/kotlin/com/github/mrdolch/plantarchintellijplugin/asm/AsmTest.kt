@@ -22,23 +22,23 @@ class AsmTest :
               title = null,
               caption = null,
               classesToAnalyze =
-                  listOf(
+                  setOf(
                       ActionStartNewDiagram::class.java.canonicalName,
                       ExecPlantArch::class.java.canonicalName,
                       DiagramEditor::class.java.canonicalName,
                   ),
               classesToHide =
-                  listOf(
+                setOf(
                       DragScrollPane::class.java.canonicalName,
                   ),
-              markerClasses =
-                  listOf(
+              markerClasses = MarkerClasses(
+                setOf(
                       JPanel::class.java.canonicalName,
                       Serializable::class.java.canonicalName,
                       kotlinx.serialization.Serializable::class.java.canonicalName,
-                  ),
+                  )),
               libraryPaths = collectJUnitClassPathUris(),
-              librariesToHide = listOf("kotlin-stdlib-2.0.20.jar"),
+              librariesToHide = setOf("kotlin-stdlib-2.0.20.jar"),
               classPaths = setOf(Path.of("build/classes/kotlin/main")),
               targetPumlFile = Paths.get("docs", "asm.puml").toFile().canonicalPath,
               showUseByMethodNames = UseByMethodNames.DEFINITION,
@@ -55,7 +55,7 @@ class AsmTest :
 
         val classDeps = Asm.scanClassPath(job.classPaths)
 
-        val puml = Asm.toPlantUml(classDeps, job).plantUml
+        val puml = Asm.toPlantUml(classDeps, job, emptySet()).plantUml
 
         println(puml)
         //        File(job.targetPumlFile).writer().use { it.write(puml) }
