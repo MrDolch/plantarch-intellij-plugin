@@ -4,6 +4,35 @@
 
 ## [Unreleased]
 
+## [0.2.3] - 2025-09-20
+
+### Added
+
+* **Marker patterns** (`exact classname`, `Prefix*`, `*Suffix`) with inferred stereotypes in PlantUML.
+* **Jar promotion**: auto-include JARs that contain any `classesToAnalyze`.
+* **Jump to Project view** for libraries; **Clear Cache** button.
+* PlantUML render **error notification**.
+
+### Changed
+
+* **UI rework**: removed ClassTreePanel; interact directly on the diagram (context menus for Show Packages/Methods, Show/Unhide Libraries, Add Class, Focus/Hide/Make Marker).
+* **PlantUML generation**: `toPlantUml(deps, params, promotedJarNames)`; smarter container filtering and marker stereotypes from patterns.
+* **State/params**: lists → **sets** (`classesToAnalyze`, `classesToHide`, `librariesToHide`, `markerClasses`); new `classesInDiagram`, `librariesDiscovered`. UI labels: *Caption*, *Styles*.
+
+### Removed
+
+* ClassTreePanel and related editor-selection wiring/tests.
+
+### Fixed
+
+* Cleaner edge filtering; safer library handling (no UNKNOWN/unwanted JARs).
+
+### Dev notes
+
+* Update tests to use sets and new `toPlantUml(..., ..., emptySet())`.
+* `markerClasses` now `MarkerClasses(setOf(...))`.
+
+
 ## [0.2.2] - 2025-09-18
 
 - Added right-click menus for title, caption, classes, and libraries.
