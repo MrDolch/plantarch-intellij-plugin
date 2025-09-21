@@ -15,11 +15,13 @@ class OptionPanel(val optionPanelState: OptionPanelState, val onChange: () -> Un
       JTextField(optionPanelState.title).apply {
         addActionListener { if (optionPanelState.title != text) onChange() }
       }
-  val captionArea = textAreaWithState(optionPanelState.description, onChange)
-  val stylesArea =
-      textAreaWithState(optionPanelState.plamtumlInlineOptions, onChange, 15)
+  val captionArea = textAreaWithState(optionPanelState.description) { onChange() }
+  val stylesArea = textAreaWithState(optionPanelState.plamtumlInlineOptions, 15) { onChange() }
   val markerClassesArea =
-      textAreaWithState(optionPanelState.markerClasses.joinToString("\n"), onChange)
+      textAreaWithState(optionPanelState.markerClasses.joinToString("\n")) { newText ->
+        optionPanelState.markerClasses = newText.split("\n").toMutableSet()
+        onChange()
+      }
 
   init {
     layout = BorderLayout()
@@ -43,11 +45,11 @@ class OptionPanel(val optionPanelState: OptionPanelState, val onChange: () -> Un
                   row++,
               )
               addFullWidth(
-                JPanel(BorderLayout()).apply {
-                  border = BorderFactory.createTitledBorder("Marker-Classes")
-                  add(JScrollPane(markerClassesArea), BorderLayout.CENTER)
-                },
-                row++,
+                  JPanel(BorderLayout()).apply {
+                    border = BorderFactory.createTitledBorder("Marker-Classes")
+                    add(JScrollPane(markerClassesArea), BorderLayout.CENTER)
+                  },
+                  row++,
               )
               addFullWidth(
                   JPanel(BorderLayout()).apply {
@@ -62,12 +64,16 @@ class OptionPanel(val optionPanelState: OptionPanelState, val onChange: () -> Un
     )
   }
 
-  private fun textAreaWithState(initial: String, onChange: () -> Unit, rows: Int = 5): JTextArea =
+  private fun textAreaWithState(
+      initial: String,
+      rows: Int = 5,
+      onChange: (newText: String) -> Unit,
+  ): JTextArea =
       JTextArea(initial, rows, 20).apply {
         addFocusListener(
             object : FocusAdapter() {
               override fun focusLost(e: FocusEvent) {
-                if (text != initial) onChange()
+                if (text != initial) onChange(text)
               }
             }
         )

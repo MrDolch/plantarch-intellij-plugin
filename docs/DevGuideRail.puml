@@ -11,7 +11,7 @@ skinparam monochrome false
 ** ☐ Context Menu: Focus in new Diagram (fast)
 ** ☐ Publish nach Intellij Market
 ** ☐ Weitere Optionen
-
+*** ☐ Bestimmte Pfeile ausschalten
 
 * <color:green> ☑ Features\n <color:green> implemented
 ** ☑ Analyse komp. Klassen

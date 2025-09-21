@@ -28,15 +28,17 @@ class AsmTest :
                       DiagramEditor::class.java.canonicalName,
                   ),
               classesToHide =
-                setOf(
+                  setOf(
                       DragScrollPane::class.java.canonicalName,
                   ),
-              markerClasses = MarkerClasses(
-                setOf(
-                      JPanel::class.java.canonicalName,
-                      Serializable::class.java.canonicalName,
-                      kotlinx.serialization.Serializable::class.java.canonicalName,
-                  )),
+              markerClasses =
+                  MarkerClasses(
+                      setOf(
+                          JPanel::class.java.canonicalName,
+                          Serializable::class.java.canonicalName,
+                          kotlinx.serialization.Serializable::class.java.canonicalName,
+                      )
+                  ),
               libraryPaths = collectJUnitClassPathUris(),
               librariesToHide = setOf("kotlin-stdlib-2.0.20.jar"),
               classPaths = setOf(Path.of("build/classes/kotlin/main")),
@@ -45,6 +47,7 @@ class AsmTest :
               showPackages = ShowPackages.FLAT,
               showLibraries = true,
               plantumlInlineOptions = "",
+              dependencyTypes = emptySet(),
           )
 
       "should render UmlDiagram" {

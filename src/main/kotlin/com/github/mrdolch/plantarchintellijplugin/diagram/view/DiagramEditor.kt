@@ -149,10 +149,10 @@ class DiagramEditor(private val diagramFile: VirtualFile) : UserDataHolderBase()
       optionPanelState.title = optionPanel.titleField.text
       optionPanelState.description = optionPanel.captionArea.text
       optionPanelState.plamtumlInlineOptions = optionPanel.stylesArea.text
-      optionPanelState.markerClasses = optionPanel.markerClassesArea.text.split("\n").toSet()
     }
     ExecPlantArch.runAnalyzerBackgroundTask(project, optionPanelState, isUpdate) { result ->
       runOnEdt {
+        optionPanel.markerClassesArea.text = optionPanelState.markerClasses.joinToString("\n")
         showLibraries.isSelected = optionPanelState.showLibraries
         optionPanelState.librariesDiscovered.addAll(result.containersInDiagram)
         optionPanelState.classesInDiagram.apply {

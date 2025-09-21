@@ -150,18 +150,6 @@ class ClassDependencyCollector(private val edgesOut: MutableSet<Edge>) :
       override fun visitTryCatchBlock(start: Label?, end: Label?, handler: Label?, type: String?) {
         if (type != null) edgesOut += Edge(owner, toKlasse(type), DepKind.INSN_TYPE, name)
       }
-
-      override fun visitLocalVariable(
-          name: String,
-          desc: String,
-          signature: String?,
-          start: Label?,
-          end: Label?,
-          index: Int,
-      ) {
-        addTypeEdge(owner, Type.getType(desc), DepKind.INSN_TYPE, edgesOut)
-        signature?.let { SignatureReader(it).acceptType(genericTypeCollector(owner, edgesOut)) }
-      }
     }
   }
 
@@ -305,7 +293,7 @@ class ClassDependencyCollector(private val edgesOut: MutableSet<Edge>) :
         // ---- „Normale“ Klassentypen in Signaturen (inkl. Raw- und Argument-Typen) ----
         override fun visitClassType(name: String) {
           // name ist internalName, z. B. java/util/List
-          addGenericEdge(name)
+//          addGenericEdge(name)
         }
 
         // ---- Methodensignaturen: Exceptions können generisch sein ----

@@ -4,21 +4,19 @@ import com.github.mrdolch.plantarchintellijplugin.asm.ShowPackages
 import com.github.mrdolch.plantarchintellijplugin.asm.UseByMethodNames
 import com.github.mrdolch.plantarchintellijplugin.diagram.utils.JumpToLibrary
 import com.github.mrdolch.plantarchintellijplugin.diagram.utils.JumpToSource.jumpToClassInSources
-import com.intellij.ide.util.TreeClassChooserFactory
+import com.github.mrdolch.plantarchintellijplugin.diagram.utils.ProjectClassChooser
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.ide.CopyPasteManager
-import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.Messages
-import com.intellij.psi.search.GlobalSearchScope
-import com.intellij.psi.search.GlobalSearchScopesCore
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextArea
 import java.awt.*
 import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.Transferable
+import java.awt.event.ItemEvent
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import java.awt.event.MouseMotionAdapter
@@ -28,13 +26,17 @@ import java.io.ByteArrayOutputStream
 import java.io.Serializable
 import java.nio.charset.StandardCharsets
 import javax.imageio.ImageIO
+import javax.swing.ButtonGroup
+import javax.swing.JCheckBoxMenuItem
 import javax.swing.JComponent
 import javax.swing.JMenu
 import javax.swing.JMenuItem
 import javax.swing.JPanel
 import javax.swing.JPopupMenu
+import javax.swing.JRadioButtonMenuItem
 import javax.swing.JTextField
 import kotlin.math.max
+import kotlin.reflect.KMutableProperty1
 import net.sourceforge.plantuml.FileFormat
 import net.sourceforge.plantuml.FileFormatOption
 import net.sourceforge.plantuml.SourceStringReader
@@ -227,32 +229,70 @@ class PngViewerPanel(
         addSeparator()
         add(
             JMenu("Show Packages").apply {
+              val group = ButtonGroup()
               ShowPackages.entries.forEach { value ->
-                add(
-                    JMenuItem(value.name).apply {
+                val item =
+                    JRadioButtonMenuItem(value.name).apply {
+                      isSelected = (value == optionPanelState.showPackages)
                       addActionListener {
                         optionPanelState.showPackages = value
                         onChange()
                       }
                     }
-                )
+                group.add(item)
+                add(item)
               }
             }
         )
         add(
             JMenu("Show Methods").apply {
+              val group = ButtonGroup()
               UseByMethodNames.entries.forEach { value ->
-                add(
-                    JMenuItem(value.name).apply {
+                val item =
+                    JRadioButtonMenuItem(value.name).apply {
+                      isSelected = (value == optionPanelState.showUseByMethodNames)
                       addActionListener {
                         optionPanelState.showUseByMethodNames = value
                         onChange()
                       }
                     }
-                )
+                group.add(item)
+                add(item)
               }
             }
         )
+        add(
+            buildCheckboxMenu(
+                "Visible Arrows",
+                optionPanelState.showDependencies,
+                listOf(
+                    "Class inheritance" to Dependency::classInheritance,
+                    "Class generic type" to Dependency::classGenericType,
+                    "Class annotation" to Dependency::classAnnotation,
+                    "Method call" to Dependency::methodCall,
+                    "Method parameter type" to Dependency::methodParameterType,
+                    "Method return type" to Dependency::methodReturnType,
+                    "Field type" to Dependency::fieldType,
+                ),
+            ) {
+              onChange()
+            }
+        )
+        addSeparator()
+        if (optionPanelState.classesToHide.isNotEmpty())
+            add(
+                JMenu("Unhide Class").apply {
+                  optionPanelState.classesToHide.forEach { className ->
+                    add(
+                        JMenuItem(className).apply {
+                          addActionListener {
+                            if (optionPanelState.classesToHide.remove(className)) onChange()
+                          }
+                        }
+                    )
+                  }
+                }
+            )
         if (optionPanelState.showLibraries && optionPanelState.librariesToHide.isNotEmpty())
             add(
                 JMenu("Unhide Library").apply {
@@ -280,27 +320,33 @@ class PngViewerPanel(
         add(
             JMenuItem("Add Class from Project").apply {
               addActionListener {
-                val runtimeScope =
-                    ModuleManager.getInstance(project)
-                        .modules
-                        .map { GlobalSearchScope.moduleRuntimeScope(it, false) }
-                        .reduce { a, b -> a.uniteWith(b) }
-
-                val chooser =
-                    TreeClassChooserFactory.getInstance(project)
-                        .createNoInnerClassesScopeChooser(
-                            "Select Class",
-                            runtimeScope,
-                            { psiClass -> psiClass.containingClass == null },
-                            null,
-                        )
-                chooser.showDialog()
-                chooser.selected?.qualifiedName?.let { classname ->
+                ProjectClassChooser.openProjectClassDialog(project)?.let { classname ->
                   if (optionPanelState.classesToAnalyze.add(classname)) onChange()
                 }
               }
             }
         )
+      }
+
+  // Generischer Helfer für Checkbox-Menüs, die auf Boolean-Properties binden
+  private fun <T> buildCheckboxMenu(
+      title: String,
+      target: T,
+      items: List<Pair<String, KMutableProperty1<T, Boolean>>>,
+      onChange: () -> Unit,
+  ): JMenu =
+      JMenu(title).apply {
+        items.forEach { (label, prop) ->
+          val item =
+              JCheckBoxMenuItem(label, prop.get(target)).apply {
+                addItemListener { e ->
+                  val selected = (e.stateChange == ItemEvent.SELECTED)
+                  prop.set(target, selected)
+                  onChange()
+                }
+              }
+          add(item)
+        }
       }
 
   private class EditDialog(dialogTitle: String, content: String) : DialogWrapper(true) {
@@ -318,7 +364,7 @@ class PngViewerPanel(
 
     override fun createCenterPanel(): JComponent = JBScrollPane(textArea)
 
-    fun result(): String = textArea.text.trim()
+    fun result(): String = textArea.text.trimEnd()
   }
 
   fun buildTextAreaPopup(
@@ -377,17 +423,22 @@ class PngViewerPanel(
         addSeparator()
         add(
             JMenuItem("Make to Marker").apply {
-              addActionListener {
-                optionPanel.markerClassesArea.text.apply { text.trim() + "\n" + className }
-                onChange()
-              }
+              addActionListener { if (optionPanelState.markerClasses.add(className)) onChange() }
             }
         )
         add(
             JMenuItem("Hide Class").apply {
               addActionListener {
-                optionPanelState.classesToAnalyze.remove(className)
-                if (optionPanelState.classesToHide.add(className)) onChange()
+                val toHide =
+                    optionPanelState.classesInDiagram
+                        .filter { it.substringAfterLast('.', it) == className }
+                        .filter { !optionPanelState.classesToHide.contains(it) }
+                // TODO: Chooser einbauen
+                if (toHide.isNotEmpty()) {
+                  optionPanelState.classesToAnalyze.removeAll(toHide)
+                  optionPanelState.classesToHide.addAll(toHide)
+                  onChange()
+                }
               }
             }
         )

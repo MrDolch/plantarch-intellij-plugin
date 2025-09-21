@@ -1,6 +1,7 @@
 package com.github.mrdolch.plantarchintellijplugin.diagram.view
 
 import com.github.mrdolch.plantarchintellijplugin.asm.Asm
+import com.github.mrdolch.plantarchintellijplugin.asm.DepKind
 import com.github.mrdolch.plantarchintellijplugin.asm.MarkerClasses
 import com.github.mrdolch.plantarchintellijplugin.asm.Parameters
 import com.github.mrdolch.plantarchintellijplugin.asm.Result
@@ -108,20 +109,35 @@ object ExecPlantArch {
     return future.get()
   }
 
-  fun createRenderParameters(optionPanelState: OptionPanelState): Parameters =
-      Parameters(
-          title = optionPanelState.title,
-          caption = optionPanelState.description,
-          libraryPaths = optionPanelState.libraryPaths.map { Path.of(it) }.toSet(),
-          classPaths = optionPanelState.classPaths.map { Path.of(it) }.toSet(),
-          showPackages = optionPanelState.showPackages,
-          showUseByMethodNames = optionPanelState.showUseByMethodNames,
-          classesToAnalyze = optionPanelState.classesToAnalyze,
-          classesToHide = optionPanelState.classesToHide,
-          librariesToHide = optionPanelState.librariesToHide,
-          markerClasses = MarkerClasses(optionPanelState.markerClasses),
-          targetPumlFile = optionPanelState.targetPumlFile,
-          showLibraries = optionPanelState.showLibraries,
-          plantumlInlineOptions = optionPanelState.plamtumlInlineOptions,
-      )
+  fun createRenderParameters(optionPanelState: OptionPanelState): Parameters {
+    val showArrows = optionPanelState.showDependencies
+    return Parameters(
+        title = optionPanelState.title,
+        caption = optionPanelState.description,
+        libraryPaths = optionPanelState.libraryPaths.map { Path.of(it) }.toSet(),
+        classPaths = optionPanelState.classPaths.map { Path.of(it) }.toSet(),
+        showPackages = optionPanelState.showPackages,
+        showUseByMethodNames = optionPanelState.showUseByMethodNames,
+        classesToAnalyze = optionPanelState.classesToAnalyze,
+        classesToHide = optionPanelState.classesToHide,
+        librariesToHide = optionPanelState.librariesToHide,
+        markerClasses = MarkerClasses(optionPanelState.markerClasses),
+        targetPumlFile = optionPanelState.targetPumlFile,
+        showLibraries = optionPanelState.showLibraries,
+        plantumlInlineOptions = optionPanelState.plamtumlInlineOptions,
+        dependencyTypes =
+            DepKind.entries
+                .filter { it != DepKind.INSN_TYPE || showArrows.fieldType }
+                .filter { it != DepKind.FIELD_TYPE || showArrows.fieldType }
+                .filter { it != DepKind.FIELD_ACCESS || showArrows.methodCall }
+                .filter { it != DepKind.METHOD_CALL || showArrows.methodCall }
+                .filter { it != DepKind.METHOD_PARAM || showArrows.methodParameterType }
+                .filter { it != DepKind.METHOD_RET || showArrows.methodReturnType }
+                .filter { it != DepKind.IMPLEMENTS || showArrows.classInheritance }
+                .filter { it != DepKind.EXTENDS || showArrows.classInheritance }
+                .filter { it != DepKind.ANNOTATION || showArrows.classAnnotation }
+                .filter { it != DepKind.GENERIC || showArrows.classGenericType }
+                .toSet(),
+    )
+  }
 }

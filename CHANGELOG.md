@@ -4,6 +4,24 @@
 
 ## [Unreleased]
 
+## [0.2.4] - 2025-09-21
+
+### Added
+
+* You can now toggle which dependency arrows are shown (inheritance, calls, fields, etc.).
+* Context menu offers *Unhide Class* and *Visible Arrows* options.
+
+### Improved
+
+* Adding classes is easier with a project-wide class chooser.
+* Marker classes can be edited directly in the options panel and update live.
+* Package/method display menus now use clear radio-button selections.
+* If no class is selected in the editor, you can still start a new diagram by choosing a class from the project.
+
+### Fixed
+
+* Diagrams are cleaner – unnecessary edges from local variables/generic signatures are no longer shown.
+
 ## [0.2.3] - 2025-09-20
 
 ### Added
