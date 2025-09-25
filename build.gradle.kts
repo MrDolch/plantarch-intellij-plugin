@@ -40,7 +40,7 @@ dependencies {
 
   implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3")
   implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
-  implementation("com.charleskorn.kaml:kaml:0.61.0")
+  implementation("com.charleskorn.kaml:kaml:0.97.0")
   implementation("net.sourceforge.plantuml:plantuml:1.2025.4")
 
   implementation("org.ow2.asm:asm:9.7.1")
