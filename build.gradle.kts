@@ -8,8 +8,8 @@ plugins {
   alias(libs.plugins.changelog) // Gradle Changelog Plugin
   alias(libs.plugins.qodana) // Gradle Qodana Plugin
   alias(libs.plugins.kover) // Gradle Kover Plugin
-  kotlin("plugin.serialization") version "2.0.20"
-  id("org.sonarqube") version "6.2.0.5505"
+  kotlin("plugin.serialization") version "2.3.10"
+  id("org.sonarqube") version "7.2.3.7755"
   id("checkstyle")
 }
 
@@ -34,17 +34,17 @@ repositories {
 // https://docs.gradle.org/current/userguide/platforms.html#sub:version-catalog
 dependencies {
   // Kotest Core
-  testImplementation("io.kotest:kotest-runner-junit5:6.0.4")
-  testImplementation("io.kotest:kotest-assertions-core:6.0.4")
+  testImplementation("io.kotest:kotest-runner-junit5:6.1.6")
+  testImplementation("io.kotest:kotest-assertions-core:6.1.6")
   testImplementation("io.kotest:kotest-framework-datatest:6.0.4")
 
-  implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3")
-  implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
-  implementation("com.charleskorn.kaml:kaml:0.61.0")
-  implementation("net.sourceforge.plantuml:plantuml:1.2025.4")
+  implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.10.0")
+  implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
+  implementation("com.charleskorn.kaml:kaml:0.104.0")
+  implementation("net.sourceforge.plantuml:plantuml:1.2026.2")
 
-  implementation("org.ow2.asm:asm:9.7.1")
-  implementation("org.ow2.asm:asm-commons:9.7.1")
+  implementation("org.ow2.asm:asm:9.9.1")
+  implementation("org.ow2.asm:asm-commons:9.9.1")
 
   // IntelliJ Platform Gradle Plugin Dependencies Extension - read more:
   // https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html
