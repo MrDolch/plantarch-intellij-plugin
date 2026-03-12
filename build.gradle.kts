@@ -46,7 +46,7 @@ dependencies {
   implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
 >>>>>>> main
   implementation("com.charleskorn.kaml:kaml:0.61.0")
-  implementation("net.sourceforge.plantuml:plantuml:1.2025.4")
+  implementation("net.sourceforge.plantuml:plantuml:1.2026.2")
 
   implementation("org.ow2.asm:asm:9.9.1")
   implementation("org.ow2.asm:asm-commons:9.9.1")
