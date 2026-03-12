@@ -42,7 +42,7 @@ jobs:
         run: ./gradlew build buildPlugin --info
 
       - name: Try upload test reports when failure occurs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: test-reports-${{ matrix.java }}
@@ -67,7 +67,7 @@ jobs:
           fi
 
       - name: Upload plugin files
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: plugin-files-java-${{ matrix.java }}
           path: build/libs/plantarch-intellij-plugin-*.jar
