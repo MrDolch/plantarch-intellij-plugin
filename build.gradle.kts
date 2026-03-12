@@ -38,13 +38,8 @@ dependencies {
   testImplementation("io.kotest:kotest-assertions-core:5.9.1")
   testImplementation("io.kotest:kotest-framework-datatest:5.9.1")
 
-<<<<<<< renovate/org.jetbrains.kotlinx-kotlinx-serialization-core-1.x
   implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.10.0")
-  implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
-=======
-  implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3")
   implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
->>>>>>> main
   implementation("com.charleskorn.kaml:kaml:0.61.0")
   implementation("net.sourceforge.plantuml:plantuml:1.2026.2")
 
