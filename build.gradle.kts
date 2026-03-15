@@ -34,7 +34,7 @@ repositories {
 // https://docs.gradle.org/current/userguide/platforms.html#sub:version-catalog
 dependencies {
   // Kotest Core
-  testImplementation("io.kotest:kotest-runner-junit5:6.1.6")
+  testImplementation("io.kotest:kotest-runner-junit5:6.1.7")
   testImplementation("io.kotest:kotest-assertions-core:6.1.6")
   testImplementation("io.kotest:kotest-framework-datatest:5.9.1")
 
