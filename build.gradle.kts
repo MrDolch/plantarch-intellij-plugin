@@ -43,7 +43,7 @@ dependencies {
   implementation("com.charleskorn.kaml:kaml:0.104.0")
   implementation("net.sourceforge.plantuml:plantuml:1.2026.6")
 
-  implementation("org.ow2.asm:asm:9.9.1")
+  implementation("org.ow2.asm:asm:9.10.1")
   implementation("org.ow2.asm:asm-commons:9.10.1")
 
   // IntelliJ Platform Gradle Plugin Dependencies Extension - read more:
