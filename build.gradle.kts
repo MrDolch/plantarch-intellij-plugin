@@ -44,7 +44,7 @@ dependencies {
   implementation("net.sourceforge.plantuml:plantuml:1.2026.6")
 
   implementation("org.ow2.asm:asm:9.9.1")
-  implementation("org.ow2.asm:asm-commons:9.9.1")
+  implementation("org.ow2.asm:asm-commons:9.10.1")
 
   // IntelliJ Platform Gradle Plugin Dependencies Extension - read more:
   // https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html
