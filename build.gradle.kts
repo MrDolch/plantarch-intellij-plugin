@@ -9,7 +9,7 @@ plugins {
   alias(libs.plugins.qodana) // Gradle Qodana Plugin
   alias(libs.plugins.kover) // Gradle Kover Plugin
   kotlin("plugin.serialization") version "2.4.0"
-  id("org.sonarqube") version "7.3.1.8318"
+  id("org.sonarqube") version "7.5.0.8588"
   id("checkstyle")
 }
 
